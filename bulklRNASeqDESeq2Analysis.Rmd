@@ -1,0 +1,1119 @@
+---
+title: "IL1RN KO Mouse Samples"
+subtitle: "Adult Hematopoietic Stem Cells"
+documentclass: article
+output:
+  html_notebook: 
+    number_sections: yes
+    self_contained: yes
+    theme: united
+    toc: yes
+    toc_depth: 6
+    toc_float:
+      collapsed: no
+---
+
+```{r setup, include=F}
+projectPath <- file.path(".")
+analysisDir <- "RNASeq.Analysis"
+analysisPath <- file.path(projectPath,analysisDir)
+outputDir <- "DESeq2.Analysis"
+outputPath <- file.path(analysisPath,outputDir)
+dataDir <- "data"
+dataPath <- file.path(projectPath,dataDir)
+
+prefix <- "DESeq2.Analysis"
+dir.create(outputPath,recursive = T)
+
+knitr::opts_knit$set(
+    base.dir = file.path(outputPath)
+)
+
+setwd(outputPath)
+
+knitr::opts_chunk$set(
+    dev = c("jpeg", "pdf"),
+	  dpi = 300,
+    echo = T,
+    fig.align = "center",
+    fig.pos = "H",
+    message = F,
+    warning = F,
+    comment = NA
+)
+
+```
+
+```{r functions, include=FALSE}
+
+suppressMessages(library(biomaRt))
+suppressMessages(library(DESeq2))
+suppressMessages(library(edgeR))
+
+suppressMessages(library(tidyverse))
+suppressMessages(library(openxlsx))
+suppressMessages(library(gtools))
+
+suppressMessages(library(RColorBrewer))
+suppressMessages(library(patchwork))
+suppressMessages(library(ggplot2))
+suppressMessages(library(ggrepel))
+suppressMessages(library(ggvenn))
+
+color.list <- c(brewer.pal(12, "Paired"),brewer.pal(12, "Set3"),brewer.pal(8, "Pastel2"),colorRampPalette(c("grey20","grey70"))(4))
+
+```
+
+# Load Data
+
+```{r}
+objects <- c("LT_Il1rnKO", "ST_Il1rnKO", "MPP_Il1rnKO")
+```
+
+# Raw Counts
+
+```{r, echo=T}
+
+GSE126428.rawCounts <- read.delim(file.path(dataPath,"GSE126428_eurofins_rawCount.tab"),sep = "\t",header = T)
+GSE126428.rawCounts$GeneName <- gsub("\\(.*","",GSE126428.rawCounts$Description)
+GSE126428.rawCounts$Description <- NULL
+head(GSE126428.rawCounts)
+
+GSE126428.rawCounts <- GSE126428.rawCounts %>% dplyr::select(GeneName,ENTREZID,everything()) %>% dplyr::select(-Length,-Effective_Length)
+
+GSE126428.aggCounts <- GSE126428.rawCounts %>% dplyr::select(-ENTREZID)%>% group_by(GeneName) %>% summarise(across(everything(), sum))
+```
+
+# LT Analysis
+
+```{r, echo=T}
+
+# Select LT experiment
+GSE126428.LT.Counts <- GSE126428.aggCounts %>% dplyr::select(GeneName,contains("_LT"))
+
+# Filter genes: at least 1 cpm in at least 3 samples
+idx <- which(rowSums(cpm(GSE126428.LT.Counts[,-c(1,2)]) >= 1) >= 3)
+
+GSE126428.LT.FilterCounts <- GSE126428.LT.Counts[idx,]
+
+GSE126428.LT.FilterCounts <- as.data.frame(GSE126428.LT.FilterCounts)
+rownames(GSE126428.LT.FilterCounts) <- GSE126428.LT.FilterCounts$GeneName
+GSE126428.LT.FilterCounts$GeneName <- NULL
+
+GSE126428.LT.coldata <- data.frame(Sample=colnames(GSE126428.LT.FilterCounts),
+                      Condition=factor(c("IL1KO","IL1KO","IL1KO","Ctrl","Ctrl","Ctrl")))
+
+rownames(GSE126428.LT.coldata) <- GSE126428.LT.coldata$Sample
+
+GSE126428.LT.dds <- DESeqDataSetFromMatrix(countData = GSE126428.LT.FilterCounts,
+                              colData = GSE126428.LT.coldata,
+                              design= ~ Condition)
+
+GSE126428.LT.dds$Condition <- relevel(GSE126428.LT.dds$Condition, ref = "Ctrl")
+
+GSE126428.LT.dds <- DESeq(GSE126428.LT.dds)
+
+plotDispEsts(GSE126428.LT.dds)
+
+GSE126428.LT.vsd <- vst(GSE126428.LT.dds, blind=FALSE)
+
+plotPCA(GSE126428.LT.vsd,intgroup=c("Condition"))
+
+GSE126428.LT.res <- results(GSE126428.LT.dds,alpha = 0.05)
+GSE126428.LT.res <- GSE126428.LT.res[order(GSE126428.LT.res$pvalue),]
+
+summary(GSE126428.LT.res)
+
+GSE126428.LT.res <- as.data.frame(GSE126428.LT.res) %>% mutate(padj2 = p.adjust(pvalue, method = "fdr"))
+GSE126428.LT.res$external_gene_name <- rownames(GSE126428.LT.res)
+
+GSE126428.LT.res <- GSE126428.LT.res %>% mutate(score=sqrt(log2FoldChange^2 + (-log10(padj2))^2))
+
+counts_norm <- counts(GSE126428.LT.dds, normalized = TRUE) + 0.5
+
+counts_norm <- counts_norm %>%
+  as.data.frame() %>%
+  mutate(external_gene_name = rownames(counts_norm)) %>%
+  dplyr::select(external_gene_name,everything())
+
+GSE126428.LT.res %>%
+  left_join(counts_norm
+            , by = c("external_gene_name")) %>%
+  write.xlsx(file = file.path(outputPath,"LT_Il1KO_DESeq2_New.xlsx"),overwrite = T)
+
+assign(objects[1], GSE126428.LT.res)
+```
+
+File with DESeq2 results + norm counts:
+[`r file.path(outputPath,"LT_Il1KO_DESeq2_New.xlsx")`](`r file.path(outputPath,"LT_Il1KO_DESeq2_New.xlsx")`)
+
+# ST Analysis
+
+```{r, echo=T}
+
+# Select LT experiment
+GSE126428.ST.aggCounts <- GSE126428.aggCounts %>% dplyr::select(GeneName,contains("_ST"))
+
+# Filter genes: at least 1 cpm in at least 3 samples
+idx <- which(rowSums(cpm(GSE126428.ST.aggCounts[,-c(1,2)]) >= 1) >= 3)
+GSE126428.ST.FilterCounts <- GSE126428.ST.aggCounts[idx,]
+
+GSE126428.ST.FilterCounts <- as.data.frame(GSE126428.ST.FilterCounts)
+rownames(GSE126428.ST.FilterCounts) <- GSE126428.ST.FilterCounts$GeneName
+
+GSE126428.ST.FilterCounts$GeneName <- NULL
+
+GSE126428.ST.coldata <- data.frame(Sample=colnames(GSE126428.ST.FilterCounts),
+                      Condition=factor(c("IL1KO","IL1KO","IL1KO","Ctrl","Ctrl","Ctrl")))
+
+rownames(GSE126428.ST.coldata) <- GSE126428.ST.coldata$Sample
+
+GSE126428.ST.dds <- DESeqDataSetFromMatrix(countData = GSE126428.ST.FilterCounts,
+                              colData = GSE126428.ST.coldata,
+                              design= ~ Condition)
+
+GSE126428.ST.dds$Condition <- relevel(GSE126428.ST.dds$Condition, ref = "Ctrl")
+
+GSE126428.ST.dds <- DESeq(GSE126428.ST.dds)
+
+plotDispEsts(GSE126428.ST.dds)
+
+GSE126428.ST.vsd <- vst(GSE126428.ST.dds, blind=FALSE)
+
+plotPCA(GSE126428.ST.vsd,intgroup=c("Condition"))
+
+GSE126428.ST.res <- results(GSE126428.ST.dds,alpha = 0.05)
+GSE126428.ST.res <- GSE126428.ST.res[order(GSE126428.ST.res$pvalue),]
+
+summary(GSE126428.ST.res)
+
+GSE126428.ST.res <- as.data.frame(GSE126428.ST.res) %>% mutate(padj2 = p.adjust(pvalue, method = "fdr"))
+GSE126428.ST.res$external_gene_name <- rownames(GSE126428.ST.res)
+
+GSE126428.ST.res <- GSE126428.ST.res %>% mutate(score=sqrt(log2FoldChange^2 + (-log10(padj2))^2))
+
+counts_norm <- counts(GSE126428.ST.dds, normalized = TRUE) + 0.5
+
+counts_norm <- counts_norm %>%
+  as.data.frame() %>%
+  mutate(external_gene_name = rownames(counts_norm)) %>%
+  dplyr::select(external_gene_name,everything())
+
+GSE126428.ST.res %>%
+  left_join(counts_norm
+            , by = c("external_gene_name")) %>%
+  write.xlsx(file = file.path(outputPath,"ST_Il1KO_DESeq2_New.xlsx"),overwrite = T)
+
+assign(objects[2], GSE126428.ST.res)
+```
+
+File with DESeq2 results + norm counts:
+[`r file.path(outputPath,"ST_Il1KO_DESeq2_New.xlsx")`](`r file.path(outputPath,"ST_Il1KO_DESeq2_New.xlsx")`)
+
+# MPP Analysis
+
+```{r, echo=T}
+
+# Select MPP Experiment Samples
+GSE126428.MPP.aggCounts <- GSE126428.aggCounts %>% dplyr::select(GeneName,contains("_MPP"))
+
+# Filter genes: at least 1 cpm in at least 3 samples
+idx <- which(rowSums(cpm(GSE126428.MPP.aggCounts[,-c(1,2)]) >= 1) >= 3)
+GSE126428.MPP.FilterCounts <- GSE126428.MPP.aggCounts[idx,]
+
+GSE126428.MPP.FilterCounts <- as.data.frame(GSE126428.MPP.FilterCounts)
+rownames(GSE126428.MPP.FilterCounts) <- GSE126428.MPP.FilterCounts$GeneName
+
+GSE126428.MPP.FilterCounts$GeneName <- NULL
+
+GSE126428.MPP.coldata <- data.frame(Sample=colnames(GSE126428.MPP.FilterCounts),
+                      Condition=factor(c("IL1KO","IL1KO","IL1KO","Ctrl","Ctrl","Ctrl")))
+
+rownames(GSE126428.MPP.coldata) <- GSE126428.MPP.coldata$Sample
+
+GSE126428.MPP.dds <- DESeqDataSetFromMatrix(countData = GSE126428.MPP.FilterCounts,
+                              colData = GSE126428.MPP.coldata,
+                              design= ~ Condition)
+
+GSE126428.MPP.dds$Condition <- relevel(GSE126428.MPP.dds$Condition, ref = "Ctrl")
+
+GSE126428.MPP.dds <- DESeq(GSE126428.MPP.dds)
+
+plotDispEsts(GSE126428.MPP.dds)
+
+GSE126428.MPP.vsd <- vst(GSE126428.MPP.dds, blind=FALSE)
+
+plotPCA(GSE126428.MPP.vsd,intgroup=c("Condition"))
+
+GSE126428.MPP.res <- results(GSE126428.MPP.dds,alpha = 0.05)
+GSE126428.MPP.res <- GSE126428.MPP.res[order(GSE126428.MPP.res$pvalue),]
+
+summary(GSE126428.MPP.res)
+
+GSE126428.MPP.res <- as.data.frame(GSE126428.MPP.res) %>% mutate(padj2 = p.adjust(pvalue, method = "fdr"))
+GSE126428.MPP.res$external_gene_name <- rownames(GSE126428.MPP.res)
+
+GSE126428.MPP.res <- GSE126428.MPP.res %>% mutate(score=sqrt(log2FoldChange^2 + (-log10(padj2))^2))
+
+counts_norm <- counts(GSE126428.MPP.dds, normalized = TRUE) + 0.5
+
+counts_norm <- counts_norm %>%
+  as.data.frame() %>%
+  mutate(external_gene_name = rownames(counts_norm)) %>%
+  dplyr::select(external_gene_name,everything())
+
+GSE126428.MPP.res %>%
+  left_join(counts_norm
+            , by = c("external_gene_name")) %>%
+  write.xlsx(file = file.path(outputPath,"MPP_Il1KO_DESeq2_New.xlsx"), overwrite = T)
+
+assign(objects[3], GSE126428.MPP.res)
+```
+
+File with DESeq2 results + norm counts:
+[`r file.path(outputPath,"MPP_Il1KO_DESeq2_New.xlsx")`](`r file.path(outputPath,"MPP_Il1KO_DESeq2_New.xlsx")`)
+
+# Import NfkB Target Genes
+
+```{r echo=TRUE}
+all <- rbind(LT_Il1rnKO,ST_Il1rnKO,MPP_Il1rnKO)
+```
+
+```{r echo=TRUE}
+
+nfkbList1 <- read_delim(file.path(dataPath,"NfkbTargets1.txt"),delim = "\t",col_names = T) %>%
+  mutate(Source="Gilmore", MouseGeneName=NA) %>%
+  dplyr::select(MouseGeneName,HumanGeneName,Acc,Category,Evidence,Source) %>%
+  filter(!is.na(Acc))
+nfkbList1 <- nfkbList1[match(unique(sort(nfkbList1$Acc)),nfkbList1$Acc),]
+
+nfkbList2 <- read_delim(file.path(dataPath,"NfkbTargets2.txt"),delim = "\t",col_names = T) %>%
+  mutate(Category = "Gosselin", Source="Gosselin", MouseGeneName=NA) %>%
+  rename("HumanGeneName"=Name,"Acc"=RefSeq_Human) %>%
+  dplyr::select(MouseGeneName,HumanGeneName,Acc,Category,Evidence,Source) %>%
+  filter(!is.na(Acc))
+nfkbList2 <- nfkbList2[match(unique(sort(nfkbList2$Acc)),nfkbList2$Acc),]
+
+nfkbList3 <- read_delim(file.path(dataPath,"Supplementary Table S4.txt"),delim = "\t",col_names = T) %>%
+  distinct(TF,Target) %>%
+  mutate(Evidence="P",Source="Arranz",Acc=NA,HumanGeneName=NA) %>%
+  rename("MouseGeneName"=Target,"Category"=TF) %>%
+  dplyr::select(MouseGeneName,HumanGeneName,Acc,Category,Evidence,Source)
+
+```
+
+```{r echo=TRUE}
+# Map human to mouse genes
+commonName <- "mouse"
+wspecies <- "Homo_sapiens"
+sp <- "hsapiens"
+# spGeneNames <- "mgi_symbol"
+
+genebuildVersion <- "91"
+genomeVersion <- "GRCm38"
+archive <- "dec2017.archive"
+
+```
+
+```{r echo=TRUE}
+mart <- useMart(host=paste(archive,"ensembl.org",sep = "."), path="/biomart/martservice"
+                , biomart = "ENSEMBL_MART_ENSEMBL"
+                , port=80,  verbose = T)
+mart <- useDataset(paste(sp,"gene","ensembl",sep="_"),mart)
+
+attrList <- listAttributes(mart)
+
+# Source Gilmore
+genesMetadataNames <- getBM(attributes = c(
+                                      "external_gene_name"
+                                      ,"ensembl_gene_id"
+                                      ,"refseq_mrna"
+)
+,uniqueRows=T, mart = mart, filters = "refseq_mrna", values =  nfkbList1$Acc
+)
+genesMetadata <- getBM(attributes = c("ensembl_gene_id"
+                                      ,"mmusculus_homolog_associated_gene_name"
+                                      ,"mmusculus_homolog_orthology_type"
+                                      ,"mmusculus_homolog_perc_id"
+                                      ,"mmusculus_homolog_perc_id_r1"
+                                      ,"mmusculus_homolog_orthology_confidence")
+                       ,uniqueRows=T, mart = mart, filters = "refseq_mrna", values =  nfkbList1$Acc)
+genesMetadata <- genesMetadata %>% filter(mmusculus_homolog_orthology_type %in% c("ortholog_one2one"))
+genesMetadata <- genesMetadata %>%
+  filter(mmusculus_homolog_orthology_type %in% c("ortholog_one2one")) %>%
+  left_join(genesMetadataNames,by = "ensembl_gene_id")
+
+nfkbList1 <- nfkbList1 %>% left_join(genesMetadata,by = c("Acc"="refseq_mrna"))
+nfkbList1 <- nfkbList1 %>% mutate(MouseGeneName = nfkbList1$mmusculus_homolog_associated_gene_name)
+nfkbList1 <- nfkbList1 %>% filter(!is.na(MouseGeneName))
+
+# Source Gosselin
+genesMetadataNames2 <- getBM(attributes = c(
+                                      "external_gene_name"
+                                      ,"ensembl_gene_id"
+                                      ,"refseq_mrna"
+)
+,uniqueRows=T, mart = mart, filters = "refseq_mrna", values =  nfkbList2$Acc
+)
+genesMetadata2 <- getBM(attributes = c(
+                                      "ensembl_gene_id"
+                                      ,"mmusculus_homolog_associated_gene_name"
+                                      ,"mmusculus_homolog_orthology_type"
+                                      ,"mmusculus_homolog_perc_id"
+                                      ,"mmusculus_homolog_perc_id_r1"
+                                      ,"mmusculus_homolog_orthology_confidence")
+                       ,uniqueRows=T, mart = mart, filters = "refseq_mrna", values =  nfkbList2$Acc)
+genesMetadata2 <- genesMetadata2 %>%
+  filter(mmusculus_homolog_orthology_type %in% c("ortholog_one2one")) %>%
+  left_join(genesMetadataNames2,by = "ensembl_gene_id")
+
+nfkbList2 <- nfkbList2 %>% left_join(genesMetadata2,by = c("Acc"="refseq_mrna"))
+nfkbList2 <- nfkbList2 %>% mutate(MouseGeneName = nfkbList2$mmusculus_homolog_associated_gene_name)
+nfkbList2 <- nfkbList2 %>% filter(!is.na(MouseGeneName))
+
+```
+
+## Targets From Gilmore dataset
+
+Targets `r length(nfkbList1$HumanGeneName)`.
+
+With Mouse OneToOne Ortholog `r sum(!is.na(nfkbList1$MouseGeneName))`.
+
+Found in our dataset: `r sum(nfkbList1$MouseGeneName %in% all$external_gene_name)`.
+
+Significant in our dataset: `r sum(unique(sort(nfkbList1$MouseGeneName )) %in% all[all$padj < 0.05,"external_gene_name"])`.
+
+## Targets From Gosselin dataset
+
+Targets `r length(nfkbList2$HumanGeneName)`.
+
+With Mouse OneToOne Ortholog `r sum(!is.na(nfkbList2$MouseGeneName))`.
+
+Found in our dataset: `r sum(nfkbList2$MouseGeneName %in% all$external_gene_name)`.
+
+Significant in our dataset: `r sum(unique(sort(nfkbList2$MouseGeneName )) %in% all[all$padj < 0.05,"external_gene_name"])`.
+
+## Targets from Arranz
+
+Total genes in Arranz: `r length(unique(sort(nfkbList3$MouseGeneName )))`.
+
+Found in our dataset: `r sum(unique(sort(nfkbList3$MouseGeneName )) %in% all$external_gene_name)`.
+
+Significant in our dataset: `r sum(unique(sort(nfkbList3$MouseGeneName )) %in% all[all$padj < 0.05,"external_gene_name"])`.
+
+## All Target Genes
+
+```{r echo=TRUE}
+nfkbGeneNames <- unique(sort(c(nfkbList1$MouseGeneName,nfkbList2$MouseGeneName,nfkbList3$MouseGeneName)))
+```
+
+Total genes: `r length(nfkbGeneNames)`.
+
+Found in our dataset: `r sum(nfkbGeneNames %in% all$external_gene_name)`.
+
+Significant in our dataset: `r sum(nfkbGeneNames %in% all[all$padj < 0.05,"external_gene_name"])`.
+
+```{r echo=TRUE}
+allTargets <- data.frame(MouseGeneName=nfkbGeneNames)
+
+allTargets <- allTargets %>% left_join(nfkbList1 %>% filter(!is.na(MouseGeneName)) %>% dplyr::select(MouseGeneName,Category), by = c("MouseGeneName"="MouseGeneName")) %>%
+  rename("Gilmore"=Category)
+
+allTargets <- allTargets %>% left_join(nfkbList2 %>% filter(!is.na(MouseGeneName)) %>% dplyr::select(MouseGeneName,Category), by = c("MouseGeneName"="MouseGeneName")) %>%
+  rename("Gosselin"=Category)
+
+for (arcat in c("NFKB","NFKB1","NFKB2","REL","RELA")) {
+  allTargets <- allTargets %>% left_join(nfkbList3 %>% dplyr::select(MouseGeneName,Category) %>% distinct(MouseGeneName,Category) %>% filter(Category == arcat), by = c("MouseGeneName"="MouseGeneName")) %>%
+    rename(!!paste0("Arranz_",arcat):=Category)
+}
+
+allTargets <- allTargets %>%
+  mutate(LT_Il1rnKO=ifelse(!MouseGeneName %in% LT_Il1rnKO$external_gene_name,NA,ifelse(MouseGeneName %in% LT_Il1rnKO[LT_Il1rnKO$padj2 < 0.05,"external_gene_name"],T,F))) %>%
+  mutate(ST_Il1rnKO=ifelse(!MouseGeneName %in% ST_Il1rnKO$external_gene_name,NA,ifelse(MouseGeneName %in% ST_Il1rnKO[ST_Il1rnKO$padj2 < 0.05,"external_gene_name"],T,F))) %>%
+  mutate(MPP_Il1rnKO=ifelse(!MouseGeneName %in% MPP_Il1rnKO$external_gene_name,NA,ifelse(MouseGeneName %in% MPP_Il1rnKO[MPP_Il1rnKO$padj2 < 0.05,"external_gene_name"],T,F)))
+
+allTargets %>% write.xlsx(file = file.path(outputPath,"NFKB.TargetsLists.xlsx"),overwrite = T)
+```
+
+# Annotate DE Tables with Nfkb targets
+
+```{r echo=TRUE}
+
+LT_Il1rnKO$isTarget <- F
+
+LT_Il1rnKO <- LT_Il1rnKO %>% left_join(nfkbList1 %>% dplyr::select(MouseGeneName,Category), by = c("external_gene_name"="MouseGeneName")) %>%
+  mutate(isTarget=ifelse(!is.na(Category),T,isTarget)) %>%
+  rename("Gilmore"=Category)
+
+LT_Il1rnKO <- LT_Il1rnKO %>% left_join(nfkbList2 %>% dplyr::select(MouseGeneName,Category), by = c("external_gene_name"="MouseGeneName")) %>%
+  mutate(isTarget=ifelse(!is.na(Category),T,isTarget)) %>%
+  rename("Gosselin"=Category)
+
+for (arcat in c("NFKB","NFKB1","NFKB2","REL","RELA")) {
+  LT_Il1rnKO <- LT_Il1rnKO %>% left_join(nfkbList3 %>%
+                                           dplyr::select(MouseGeneName,Category) %>%
+                                           distinct(MouseGeneName,Category) %>%
+                                           filter(Category == arcat), by = c("external_gene_name"="MouseGeneName")) %>%
+    mutate(isTarget=ifelse(!is.na(Category),T,isTarget)) %>%
+    rename(!!paste0("Arranz_",arcat):=Category)
+}
+
+LT_Il1rnKO <- LT_Il1rnKO %>% mutate(score=sqrt(log2FoldChange^2 + (-log10(padj2))^2)) %>% arrange(desc(score))
+LT_Il1rnKO %>% write.xlsx(file = file.path(outputPath,"LT_Il1rnKO.nfkbAnnot.xlsx"),overwrite = T)
+```
+
+```{r echo=TRUE}
+
+ST_Il1rnKO$isTarget <- F
+ST_Il1rnKO <- ST_Il1rnKO %>% left_join(nfkbList1 %>% dplyr::select(MouseGeneName,Category), by = c("external_gene_name"="MouseGeneName")) %>%
+  mutate(isTarget=ifelse(!is.na(Category),T,isTarget)) %>%
+  rename("Gilmore"=Category)
+
+ST_Il1rnKO <- ST_Il1rnKO %>% left_join(nfkbList2 %>% dplyr::select(MouseGeneName,Category), by = c("external_gene_name"="MouseGeneName")) %>%
+  mutate(isTarget=ifelse(!is.na(Category),T,isTarget)) %>%
+  rename("Gosselin"=Category)
+
+for (arcat in c("NFKB","NFKB1","NFKB2","REL","RELA")) {
+  ST_Il1rnKO <- ST_Il1rnKO %>% left_join(nfkbList3 %>%
+                                           dplyr::select(MouseGeneName,Category) %>%
+                                           distinct(MouseGeneName,Category) %>%
+                                           filter(Category == arcat), by = c("external_gene_name"="MouseGeneName")) %>%
+    mutate(isTarget=ifelse(!is.na(Category),T,isTarget)) %>%
+    rename(!!paste0("Arranz_",arcat):=Category)
+}
+ST_Il1rnKO <- ST_Il1rnKO %>% mutate(score=sqrt(log2FoldChange^2 + (-log10(padj2))^2)) %>% arrange(desc(score))
+ST_Il1rnKO %>% write.xlsx(file = file.path(outputPath,"ST_Il1rnKO.nfkbAnnot.xlsx"),overwrite = T)
+
+```
+
+```{r echo=TRUE}
+
+MPP_Il1rnKO$isTarget <- F
+MPP_Il1rnKO <- MPP_Il1rnKO %>% left_join(nfkbList1 %>% dplyr::select(MouseGeneName,Category), by = c("external_gene_name"="MouseGeneName")) %>%
+  mutate(isTarget=ifelse(!is.na(Category),T,isTarget)) %>%
+  rename("Gilmore"=Category)
+
+MPP_Il1rnKO <- MPP_Il1rnKO %>% left_join(nfkbList2 %>% dplyr::select(MouseGeneName,Category), by = c("external_gene_name"="MouseGeneName")) %>%
+  mutate(isTarget=ifelse(!is.na(Category),T,isTarget)) %>%
+  rename("Gosselin"=Category)
+
+for (arcat in c("NFKB","NFKB1","NFKB2","REL","RELA")) {
+  MPP_Il1rnKO <- MPP_Il1rnKO %>% left_join(nfkbList3 %>%
+                                             dplyr::select(MouseGeneName,Category) %>%
+                                             distinct(MouseGeneName,Category) %>%
+                                             filter(Category == arcat), by = c("external_gene_name"="MouseGeneName")) %>%
+    mutate(isTarget=ifelse(!is.na(Category),T,isTarget)) %>%
+    rename(!!paste0("Arranz_",arcat):=Category)
+}
+MPP_Il1rnKO <- MPP_Il1rnKO %>% mutate(score=sqrt(log2FoldChange^2 + (-log10(padj2))^2)) %>% arrange(desc(score))
+MPP_Il1rnKO %>% write.xlsx(file = file.path(outputPath,"MPP_Il1rnKO.nfkbAnnot.xlsx"),overwrite = T)
+
+```
+
+# Overlaps Between Contrasts
+
+```{r echo=TRUE}
+
+# Overlap between contrasts of significantly upregulated genes
+deList <- list(
+  LT_Il1rnKO = LT_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange > 0) %>% .$external_gene_name,
+  ST_Il1rnKO = ST_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange > 0) %>% .$external_gene_name,
+  MPP_Il1rnKO = MPP_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange > 0) %>% .$external_gene_name
+)
+
+ggvenn(deList, names(deList),
+       show_percentage = F,
+       fill_color = color.list,
+       set_name_size = 4,
+       text_size = 5) +
+  ggtitle("Upregulated genes")
+
+```
+
+```{r echo=TRUE}
+
+# Overlap between contrasts of significantly downregulated genes
+deList <- list(
+  LT_Il1rnKO = LT_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange < 0) %>% .$external_gene_name,
+  ST_Il1rnKO = ST_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange < 0) %>% .$external_gene_name,
+  MPP_Il1rnKO = MPP_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange < 0) %>% .$external_gene_name
+)
+
+ggvenn(deList, names(deList),
+       show_percentage = F,
+       fill_color = color.list,
+       set_name_size = 4,
+       text_size = 5) +
+  ggtitle("Downregulated genes")
+
+```
+
+# Vulcano Plots
+
+```{r echo=TRUE}
+toLabel = list()
+for (i in 1:3) {
+  toLabel[[objects[i]]] <- read.xlsx(file.path(dataPath,"toLabel",paste0(objects[i],".nfkbAnnot.xlsx")))
+  toLabel[[objects[i]]] <- toLabel[[objects[i]]] %>% filter(toLabel == 1) %>% dplyr::select(external_gene_name)
+}
+lapply(toLabel, dim)
+```
+
+
+```{r echo=TRUE}
+
+pCutoff=0.05
+FCcutoff=0.5
+for(i in 1:3) {
+  
+  temp <- get(objects[i])
+  
+  temp <- temp %>% mutate(toLabel = external_gene_name %in% toLabel[[objects[i]]]$external_gene_name )
+  
+  # Get list of Ribosomic related genes
+  riboMtOthers = temp[grep("^Rpl|^Rps|^mt-|^Ig[a-z]v", temp$external_gene_name),"external_gene_name"]
+  
+  # Remove genes with low expression & pvalue over 0.05 | p_adjusted_value over 1
+  temp <- temp %>% filter(!is.na(padj)) %>%
+    filter(!(baseMean < 500 & pvalue > 0.05)) %>%
+    filter(padj < 1)
+  
+  # Order by distance to 0 in the vulcano plot
+  temp <- temp %>% arrange(-score)
+  
+  # Remove predicted genes (Gm)
+  temp <- temp %>% filter(!grepl("Gm[0-9]+", external_gene_name))
+  
+  # Label selected Nfkb genes except ribo genes
+  temp <- temp %>% mutate(anno = ifelse(toLabel == T,external_gene_name,"")) %>%
+    mutate(anno = ifelse(external_gene_name %in% riboMtOthers,"",anno))
+  
+  # Mark as red all genes below 0.05 and with LFC over 0.5
+  temp <- temp %>% mutate(fillme = "black", size = 0.1) %>%
+    mutate(fillme = ifelse(padj < pCutoff & abs(log2FoldChange) > FCcutoff,"red",fillme))
+  
+  # Mark as blue all significant Nkfb targets and increase size and border color of labeled genes
+  temp <- temp %>% mutate(fillme = ifelse(isTarget & fillme == "red","blue",fillme)) %>%
+    mutate(colorme = ifelse(anno != "","black",fillme)) %>%
+    mutate(sizeme = ifelse(anno != "",1,size))
+  
+  temp <- temp %>% mutate(log2FoldChange = round(log2FoldChange, 2)) %>%
+    mutate(padj = signif(temp$padj, 3))
+  
+  temp <- temp %>% arrange(anno,isTarget,desc(score))
+  
+  p <- as.data.frame(temp) %>% ggplot(aes(x = log2FoldChange, y = -log10(padj))
+                       ) +
+    geom_point(shape = 21, fill = temp$fillme, color = temp$colorme, size = temp$sizeme) +
+    geom_text_repel(size = 2, label = temp$anno,
+                    point.padding = unit(1e-10, "lines"),
+                    # segment.color = 'transparent',
+                    box.padding = 0.1,
+                    max.overlaps = 500,
+                    seed = 42
+    ) +
+    ggtitle(objects[i]) +
+    theme(panel.background = element_blank(),
+          axis.line = element_line(),
+          panel.border = element_rect(fill = "transparent")
+    ) +
+    ylab("-log10 (Adjusted p value)") + xlab("log2 FC")
+  
+  assign(paste("p", objects[i], sep = "."), p)
+  
+}
+
+p.LT_Il1rnKO
+p.ST_Il1rnKO
+p.MPP_Il1rnKO
+
+```
+
+```{r echo=TRUE, fig.asp=0.5}
+p.LT_Il1rnKO + p.ST_Il1rnKO + p.MPP_Il1rnKO
+```
+
+# CD63 Analysis
+```{r echo=TRUE}
+objects <- c(objects,"CD63_Il1rnKO")
+```
+
+```{r echo=TRUE}
+
+# Select MPP Experiment Samples
+GSE126428.CD63.aggCounts <- GSE126428.aggCounts %>% dplyr::select(GeneName,contains("CD63"))
+
+# Filter genes: at least 1 cpm in at least 3 samples
+idx <- which(rowSums(cpm(GSE126428.CD63.aggCounts[,-c(1,2)]) >= 1) >= 3)
+GSE126428.CD63.FilterCounts <- GSE126428.CD63.aggCounts[idx,]
+
+GSE126428.CD63.FilterCounts <- as.data.frame(GSE126428.CD63.FilterCounts)
+rownames(GSE126428.CD63.FilterCounts) <- GSE126428.CD63.FilterCounts$GeneName
+
+GSE126428.CD63.FilterCounts$GeneName <- NULL
+
+GSE126428.CD63.coldata <- data.frame(Sample=colnames(GSE126428.CD63.FilterCounts),
+                      Condition=factor(c("IL1KO","IL1KO","IL1KO","Ctrl","Ctrl","Ctrl")))
+
+rownames(GSE126428.CD63.coldata) <- GSE126428.CD63.coldata$Sample
+
+GSE126428.CD63.dds <- DESeqDataSetFromMatrix(countData = GSE126428.CD63.FilterCounts,
+                              colData = GSE126428.CD63.coldata,
+                              design= ~ Condition)
+
+GSE126428.CD63.dds$Condition <- relevel(GSE126428.CD63.dds$Condition, ref = "Ctrl")
+
+GSE126428.CD63.dds <- DESeq(GSE126428.CD63.dds)
+
+plotDispEsts(GSE126428.CD63.dds)
+
+GSE126428.CD63.vsd <- vst(GSE126428.CD63.dds, blind=FALSE)
+
+plotPCA(GSE126428.CD63.vsd,intgroup=c("Condition"))
+
+GSE126428.CD63.res <- results(GSE126428.CD63.dds,alpha = 0.05)
+GSE126428.CD63.res <- GSE126428.CD63.res[order(GSE126428.CD63.res$pvalue),]
+
+summary(GSE126428.CD63.res)
+
+GSE126428.CD63.res <- as.data.frame(GSE126428.CD63.res) %>% mutate(padj2 = p.adjust(pvalue, method = "fdr"))
+GSE126428.CD63.res$external_gene_name <- rownames(GSE126428.CD63.res)
+
+GSE126428.CD63.res <- GSE126428.CD63.res %>% mutate(score=sqrt(log2FoldChange^2 + (-log10(padj2))^2))
+
+counts_norm <- counts(GSE126428.CD63.dds, normalized = TRUE) + 0.5
+
+counts_norm <- counts_norm %>%
+  as.data.frame() %>%
+  mutate(external_gene_name = rownames(counts_norm)) %>%
+  dplyr::select(external_gene_name,everything())
+
+GSE126428.CD63.res %>%
+  left_join(counts_norm
+            , by = c("external_gene_name")) %>%
+  write.xlsx(file = file.path(outputPath,"CD63_Il1KO_DESeq2_New.xlsx"), overwrite = T)
+
+assign(objects[4], GSE126428.CD63.res)
+
+```
+
+File with DESeq2 results + norm counts:
+[`r file.path("CD63_Il1KO_DESeq2_New.xlsx")`](`r file.path("CD63_Il1KO_DESeq2_New.xlsx")`)
+
+# Vulcano on CD63
+
+```{r echo=TRUE}
+
+# CD63 Experiment Vulcano Plot
+toLabel <- c("Wif1","Id3","Dab2","Zfp9","Ctgf","Angpt1","Fbln5","Cdh2","Lepr","Adipoq","Thsd4","Cxcl12","Vcam1","Cd68","Ctsg","Mpo","Podxl","Csf2rb","Unc13d","Lrg1","Wfdc17","Mfsd12","Prtn3")
+
+pCutoff=0.05
+FCcutoff=0.1
+
+temp <- get(objects[4])
+
+# Get list of Ribosomic related genes
+riboMtOthers = temp[grep("^Rpl|^Rps|^mt-|^Ig[a-z]v", temp$external_gene_name),"external_gene_name"]
+
+# Remove genes with low expression & pvalue over 0.05 | p_adjusted_value over 1
+temp <- temp %>% filter(!is.na(padj)) %>%
+  filter(padj < 1)
+
+# Order by distance to 0 in the vulcano plot
+temp <- temp %>% mutate(score=sqrt(log2FoldChange^2 + (-log10(padj2))^2)) %>% arrange(desc(score)) %>% arrange(padj)
+
+# Remove predicted genes (Gm)
+temp <- temp %>% filter(!grepl("Gm[0-9]+", external_gene_name))
+
+# Label top 10 up and top 10 down genes plus selected ones
+dummy <- temp %>% mutate(up = log2FoldChange > 0) %>% group_split(up)
+toLabel <- unique(sort(c(toLabel,unlist(lapply(dummy,function (x) {return(head(x %>% filter(padj < 0.05) %>% .$external_gene_name,10))})))))
+
+# Label selected genes except ribo genes
+temp <- temp %>% mutate(anno = ifelse(external_gene_name %in% toLabel,external_gene_name,"")) %>%
+  mutate(anno = ifelse(external_gene_name %in% riboMtOthers,"",anno))
+
+temp <- temp %>% mutate(fill = "black", size = 0.1) %>%
+  mutate(fill = ifelse(padj < pCutoff & abs(log2FoldChange) > FCcutoff,"red",fill)) %>%
+  mutate(color = ifelse(anno != "","black",fill)) %>%
+  mutate(size = ifelse(anno != "",1,size)) %>%
+  mutate(log2FoldChange = round(log2FoldChange, 2)) %>%
+  mutate(padj = signif(temp$padj, 3)) %>%
+  arrange(desc(anno),desc(score))
+
+p <- temp %>%
+  ggplot(aes(x = log2FoldChange, y = -log10(padj))) + 
+  geom_point(shape = 21, fill = temp$fill, color = temp$color, size = temp$size) +
+  geom_text_repel(size = 2, label = temp$anno,
+                  point.padding = unit(1e-10, "lines"),
+                  segment.color = 'black',
+                  box.padding = 0.1,
+                  max.overlaps = 1000,
+                  seed = 42
+  ) +
+  ggtitle(objects[4]) +
+  theme(panel.background = element_blank(),
+        axis.line = element_line(),
+        panel.border = element_rect(fill = "transparent")
+  ) +
+  ylab("-log10 (Adjusted p value)") + xlab("log2 FC")
+
+assign(paste("p", objects[4], sep = "."), p)
+
+print(p.CD63_Il1rnKO)
+
+```
+
+# GSE165810 Contrast
+
+```{r echo=TRUE}
+
+GSE165810.CountsFile <- file.path(dataPath,"GSE165810.RawCounts.txt")
+
+GSE165810.RawCounts <- read.delim(GSE165810.CountsFile,sep = "\t",header = T)
+
+dim(GSE165810.RawCounts)
+
+head(GSE165810.RawCounts)
+
+
+# Filter low expressed genes: At least 1 cpm in at least 4 samples
+idx <- which(rowSums(cpm(GSE165810.RawCounts[,-1]) >= 1) >= 4)
+
+GSE165810.FilterCounts <- GSE165810.RawCounts[idx,]
+rownames(GSE165810.FilterCounts) <- GSE165810.FilterCounts$Geneid
+GSE165810.FilterCounts$Geneid <- NULL
+GSE165810.coldata <- data.frame(Sample=colnames(GSE165810.FilterCounts),
+                      Condition=factor(c("IL1KO","IL1KO","Ctrl","Ctrl","Ctrl","Ctrl","IL1KO","IL1KO")),
+                      Batch=factor(rep(c(1,2),each=4))
+)
+rownames(GSE165810.coldata) <- GSE165810.coldata$Sample
+
+GSE165810.dds <- DESeqDataSetFromMatrix(countData = GSE165810.FilterCounts,
+                              colData = GSE165810.coldata,
+                              design= ~ Batch + Condition)
+
+GSE165810.dds$Condition <- relevel(GSE165810.dds$Condition, ref = "Ctrl")
+
+GSE165810.dds <- DESeq(GSE165810.dds)
+
+GSE165810.vsd <- vst(GSE165810.dds, blind=FALSE)
+
+plotPCA(GSE165810.vsd,intgroup=c("Condition", "Batch"))
+
+GSE165810.res <- results(GSE165810.dds,alpha = 0.05)
+GSE165810.res <- GSE165810.res[order(GSE165810.res$pvalue),]
+
+
+summary(GSE165810.res)
+
+GSE165810.res <- as.data.frame(GSE165810.res) %>% mutate(padj2 = p.adjust(pvalue, method = "fdr"))
+
+GSE165810.res %>% mutate(external_gene_name = rownames(GSE165810.res)) %>% as.data.frame() %>% write.xlsx(file = file.path(outputPath,"GSE165810.res.xlsx"),overwrite = T)
+
+```
+
+```{r echo=TRUE}
+objects <- c(objects,"GSE165810")
+
+GSE165810 <- as.data.frame(GSE165810.res)
+GSE165810$external_gene_name <- rownames(GSE165810)
+GSE165810$padj2 <- GSE165810$padj
+
+allSig <- data.frame(external_gene_name=unique(sort(c(
+                      GSE165810 %>% filter(padj < 0.05) %>% .$external_gene_name,
+                      LT_Il1rnKO %>% filter(padj < 0.05) %>% .$external_gene_name,
+                      ST_Il1rnKO %>% filter(padj < 0.05) %>% .$external_gene_name,
+                      MPP_Il1rnKO %>% filter(padj < 0.05) %>% .$external_gene_name))))
+
+for (i in 1:length(objects)) {
+  allSig <- allSig %>% left_join(get(objects[i]) %>% filter(padj < 0.05) %>% dplyr::select(external_gene_name,log2FoldChange),by = c("external_gene_name")) %>%
+  rename(!!objects[i]:=log2FoldChange)
+}
+
+allSig$isTarget <- F
+allSig[allSig$external_gene_name %in% nfkbGeneNames,"isTarget"] <- T
+allSig %>% write.xlsx(file = file.path(outputPath,"GSE165810.AllSig.xlsx"),overwrite=T)
+```
+
+## Overlaps
+
+Total genes in common: `r length(intersect(GSE165810$external_gene_name, all$external_gene_name))`
+
+```{r echo=TRUE, fig.height=6, fig.width=6}
+deList <- list(
+  LT_Il1rnKO = LT_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange > 0) %>% .$external_gene_name,
+  ST_Il1rnKO = ST_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange > 0) %>% .$external_gene_name,
+  MPP_Il1rnKO = MPP_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange > 0) %>% .$external_gene_name,
+  GSE165810 = GSE165810 %>% filter(padj < 0.05 & log2FoldChange > 0) %>% .$external_gene_name
+)
+
+p <- ggvenn(deList, names(deList),
+             show_percentage = F,
+             fill_color = color.list,
+             set_name_size = 4,
+             text_size = 5) +
+  ggtitle("Upregulated genes")
+
+print(p)
+```
+
+```{r echo=TRUE}
+deList <- list(
+  LT_Il1rnKO = LT_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange < 0) %>% .$external_gene_name,
+  ST_Il1rnKO = ST_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange < 0) %>% .$external_gene_name,
+  MPP_Il1rnKO = MPP_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange < 0) %>% .$external_gene_name,
+  GSE165810 = GSE165810 %>% filter(padj < 0.05 & log2FoldChange < 0) %>% .$external_gene_name
+)
+
+p <- ggvenn(deList, names(deList),
+             show_percentage = F,
+             fill_color = color.list,
+             set_name_size = 4,
+             text_size = 5) +
+  ggtitle("Downregulated genes")
+
+print(p)
+
+```
+
+# GSE166629 Contrast
+
+```{r echo=TRUE}
+
+GSE166629.RawCounts <- read.delim(file = file.path(dataPath,"GSE166629.RawCounts.txt"),header = T,sep = "\t")
+dim(GSE166629.RawCounts)
+head(GSE166629.RawCounts)[,1:5]
+colnames(GSE166629.RawCounts)
+rownames(GSE166629.RawCounts) <- GSE166629.RawCounts$Geneid
+GSE166629.RawCounts$Geneid <- NULL
+GSE166629.RawCounts <- as.matrix(GSE166629.RawCounts)
+
+sampleMetadataGSE166629 <- read.delim(file.path(dataPath,"GSE166629_SampleMetadata.txt"),sep = "\t")
+sampleMetadataGSE166629 <- as.data.frame(t(sampleMetadataGSE166629))
+colnames(sampleMetadataGSE166629) <- sampleMetadataGSE166629[1,]
+sampleMetadataGSE166629 <- sampleMetadataGSE166629[-1,]
+rownames(sampleMetadataGSE166629) <- sub("\\.","",rownames(sampleMetadataGSE166629))
+sampleMetadataGSE166629$SampleName <- rownames(sampleMetadataGSE166629)
+rownames(sampleMetadataGSE166629) <- sampleMetadataGSE166629$Sample_description
+GSE166629.coldata <- sampleMetadataGSE166629 %>% rename("Condition"=treatment,"Group"=yfp)
+rownames(GSE166629.coldata) <- GSE166629.coldata$SampleName
+
+GSE166629.coldata <- GSE166629.coldata %>% filter(mouse_genotype == "WT")
+
+GSE166629.RawCounts <- GSE166629.RawCounts[,rownames(GSE166629.coldata)]
+```
+
+## YFP_POS
+
+```{r echo=TRUE}
+
+YFP_POS_Group.coldata <- GSE166629.coldata %>% filter(Group == "YFP_POS" & mouse_genotype == "WT")
+
+YFP_POS_Group.RawCounts <- GSE166629.RawCounts[,rownames(YFP_POS_Group.coldata)]
+
+# Filter low expressed genes: At least 1 cpm in at least 3 samples
+idx <- which(rowSums(cpm(YFP_POS_Group.RawCounts) >= 1) >= 3)
+
+YFP_POS_Group.FilterCounts <- YFP_POS_Group.RawCounts[idx,]
+
+YFP_POS_Group.dds <- DESeqDataSetFromMatrix(countData = YFP_POS_Group.FilterCounts,
+                              colData = YFP_POS_Group.coldata,
+                              design= ~ Condition)
+
+YFP_POS_Group.dds$Condition <- relevel(YFP_POS_Group.dds$Condition, ref = "PBS")
+
+YFP_POS_Group.dds <- DESeq(YFP_POS_Group.dds)
+
+YFP_POS_Group.vsd <- vst(YFP_POS_Group.dds, blind=FALSE)
+
+plotPCA(YFP_POS_Group.vsd,intgroup=c("Condition"))
+
+YFP_POS_Group.res <- results(YFP_POS_Group.dds,alpha = 0.05)
+YFP_POS_Group.res <- YFP_POS_Group.res[order(YFP_POS_Group.res$pvalue),]
+
+summary(YFP_POS_Group.res)
+
+YFP_POS_Group.res <- as.data.frame(YFP_POS_Group.res) %>% mutate(padj2 = p.adjust(pvalue, method = "fdr"))
+
+YFP_POS_Group.res %>% mutate(external_gene_name = rownames(YFP_POS_Group.res)) %>%  as.data.frame() %>% write.xlsx(file = file.path(outputPath,"YFP_POS_Group.res.xlsx"),overwrite = T)
+
+```
+
+```{r echo=TRUE}
+objects <- c("LT_Il1rnKO","ST_Il1rnKO","MPP_Il1rnKO","YFP_POS_Group")
+
+YFP_POS_Group <- as.data.frame(YFP_POS_Group.res)
+YFP_POS_Group$external_gene_name <- rownames(YFP_POS_Group)
+YFP_POS_Group$padj2 <- YFP_POS_Group$padj
+
+
+allSig <- data.frame(external_gene_name=unique(sort(c(
+                      YFP_POS_Group %>% filter(padj < 0.05) %>% .$external_gene_name,
+                      LT_Il1rnKO %>% filter(padj < 0.05) %>% .$external_gene_name,
+                      ST_Il1rnKO %>% filter(padj < 0.05) %>% .$external_gene_name,
+                      MPP_Il1rnKO %>% filter(padj < 0.05) %>% .$external_gene_name))))
+
+for (i in 1:length(objects)) {
+  allSig <- allSig %>% left_join(get(objects[i]) %>% filter(padj < 0.05) %>% dplyr::select(external_gene_name,log2FoldChange),by = c("external_gene_name")) %>%
+  rename(!!objects[i]:=log2FoldChange)
+}
+
+allSig$isTarget <- F
+allSig[allSig$external_gene_name %in% nfkbGeneNames,"isTarget"] <- T
+allSig %>% write.xlsx(file = file.path(outputPath,"YFP_POS_Group.AllSig.xlsx"),overwrite=T)
+```
+
+### Overlaps
+
+Total genes in common: `r length(intersect(YFP_POS_Group$external_gene_name, all$external_gene_name))`
+
+```{r echo=TRUE, fig.height=6, fig.width=6}
+### Upregulated
+deList <- list(
+  LT_Il1rnKO = LT_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange > 0) %>% .$external_gene_name,
+  ST_Il1rnKO = ST_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange > 0) %>% .$external_gene_name,
+  MPP_Il1rnKO = MPP_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange > 0) %>% .$external_gene_name,
+  YFP_POS_Group = YFP_POS_Group %>% filter(padj < 0.05 & log2FoldChange > 0) %>% .$external_gene_name
+)
+
+p <- ggvenn(deList, names(deList),
+             show_percentage = F,
+             fill_color = color.list,
+             set_name_size = 4,
+             text_size = 5) +
+  ggtitle("Upregulated genes")
+
+print(p)
+
+```
+
+```{r echo=TRUE, fig.height=6, fig.width=6}
+deList <- list(
+  LT_Il1rnKO = LT_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange < 0) %>% .$external_gene_name,
+  ST_Il1rnKO = ST_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange < 0) %>% .$external_gene_name,
+  MPP_Il1rnKO = MPP_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange < 0) %>% .$external_gene_name,
+  YFP_POS_Group = YFP_POS_Group %>% filter(padj < 0.05 & log2FoldChange < 0) %>% .$external_gene_name
+)
+
+### Downregulated
+p <- ggvenn(deList, names(deList),
+             show_percentage = F,
+             fill_color = color.list,
+             set_name_size = 4,
+             text_size = 5) +
+  ggtitle("Downregulated genes")
+
+print(p)
+
+```
+
+## YFP_NEG
+
+```{r echo=TRUE}
+
+YFP_NEG_Group.coldata <- GSE166629.coldata %>% filter(Group == "YFP_NEG" & mouse_genotype == "WT")
+
+YFP_NEG_Group.RawCounts <- GSE166629.RawCounts[,rownames(YFP_NEG_Group.coldata)]
+
+# Filter low expressed genes: At least 1 cpm in at least 3 samples
+idx <- which(rowSums(cpm(YFP_NEG_Group.RawCounts) >= 1) >= 3)
+
+YFP_NEG_Group.FilterCounts <- YFP_NEG_Group.RawCounts[idx,]
+
+YFP_NEG_Group.dds <- DESeqDataSetFromMatrix(countData = YFP_NEG_Group.FilterCounts,
+                              colData = YFP_NEG_Group.coldata,
+                              design= ~ Condition)
+
+YFP_NEG_Group.dds$Condition <- relevel(YFP_NEG_Group.dds$Condition, ref = "PBS")
+
+YFP_NEG_Group.dds <- DESeq(YFP_NEG_Group.dds)
+
+YFP_NEG_Group.vsd <- vst(YFP_NEG_Group.dds, blind=FALSE)
+
+plotPCA(YFP_NEG_Group.vsd,intgroup=c("Condition"))
+
+YFP_NEG_Group.res <- results(YFP_NEG_Group.dds,alpha = 0.05)
+YFP_NEG_Group.res <- YFP_NEG_Group.res[order(YFP_NEG_Group.res$pvalue),]
+
+
+summary(YFP_NEG_Group.res)
+
+YFP_NEG_Group.res <- as.data.frame(YFP_NEG_Group.res) %>% mutate(padj2 = p.adjust(pvalue, method = "fdr"))
+
+YFP_NEG_Group.res %>% mutate(external_gene_name = rownames(YFP_NEG_Group.res)) %>% as.data.frame() %>% write.xlsx(file = file.path(outputPath,"YFP_NEG_Group.res.xlsx"),overwrite = T)
+
+```
+
+```{r echo=TRUE}
+objects <- c("LT_Il1rnKO","ST_Il1rnKO","MPP_Il1rnKO","YFP_NEG_Group")
+
+YFP_NEG_Group <- as.data.frame(YFP_NEG_Group.res)
+YFP_NEG_Group$external_gene_name <- rownames(YFP_NEG_Group)
+YFP_NEG_Group$padj2 <- YFP_NEG_Group$padj
+
+
+allSig <- data.frame(external_gene_name=unique(sort(c(
+                      YFP_NEG_Group %>% filter(padj < 0.05) %>% .$external_gene_name,
+                      LT_Il1rnKO %>% filter(padj < 0.05) %>% .$external_gene_name,
+                      ST_Il1rnKO %>% filter(padj < 0.05) %>% .$external_gene_name,
+                      MPP_Il1rnKO %>% filter(padj < 0.05) %>% .$external_gene_name))))
+
+for (i in 1:length(objects)) {
+  allSig <- allSig %>% left_join(get(objects[i]) %>% filter(padj < 0.05) %>% dplyr::select(external_gene_name,log2FoldChange),by = c("external_gene_name")) %>%
+  rename(!!objects[i]:=log2FoldChange)
+}
+
+allSig$isTarget <- F
+allSig[allSig$external_gene_name %in% nfkbGeneNames,"isTarget"] <- T
+allSig %>% write.xlsx(file = file.path(outputPath,"YFP_NEG_Group.AllSig.xlsx"),overwrite=T)
+
+```
+
+### Overlaps
+
+Total genes in common: `r length(intersect(YFP_NEG_Group$external_gene_name, all$external_gene_name))`
+
+```{r echo=TRUE, fig.height=6, fig.width=6}
+deList <- list(
+  LT_Il1rnKO = LT_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange > 0) %>% .$external_gene_name,
+  ST_Il1rnKO = ST_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange > 0) %>% .$external_gene_name,
+  MPP_Il1rnKO = MPP_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange > 0) %>% .$external_gene_name,
+  YFP_NEG_Group = YFP_NEG_Group %>% filter(padj < 0.05 & log2FoldChange > 0) %>% .$external_gene_name
+)
+
+p <- ggvenn(deList, names(deList),
+             show_percentage = F,
+             fill_color = color.list,
+             set_name_size = 4,
+             text_size = 5) +
+  ggtitle("Upregulated genes")
+
+print(p)
+
+```
+
+```{r echo=TRUE, fig.height=6, fig.width=6}
+deList <- list(
+  LT_Il1rnKO = LT_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange < 0) %>% .$external_gene_name,
+  ST_Il1rnKO = ST_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange < 0) %>% .$external_gene_name,
+  MPP_Il1rnKO = MPP_Il1rnKO %>% filter(padj < 0.05 & log2FoldChange < 0) %>% .$external_gene_name,
+  YFP_NEG_Group = YFP_NEG_Group %>% filter(padj < 0.05 & log2FoldChange < 0) %>% .$external_gene_name
+)
+
+p <- ggvenn(deList, names(deList),
+             show_percentage = F,
+             fill_color = color.list,
+             set_name_size = 4,
+             text_size = 5) +
+  ggtitle("Downregulated genes")
+
+print(p)
+```
+
+# Session Info
+
+```{r echo=TRUE}
+sessionInfo()
+```
+

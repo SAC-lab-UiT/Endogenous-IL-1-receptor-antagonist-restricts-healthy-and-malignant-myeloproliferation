@@ -1,0 +1,1179 @@
+---
+title: "Myeloid Analysis"
+output: html_notebook
+---
+
+```{r message=FALSE, warning=FALSE}
+suppressWarnings(library(Seurat))
+suppressWarnings(library(scran))
+suppressWarnings(library(scDblFinder))
+suppressWarnings(library(tidyverse))
+suppressWarnings(library(RColorBrewer))
+suppressWarnings(library(openxlsx))
+suppressWarnings(library(circlize))
+suppressWarnings(library(gtools))
+suppressWarnings(library(ggExtra))
+suppressWarnings(library(ggridges))
+suppressWarnings(library(patchwork))
+
+projectDir <- "."
+projectPath <- file.path(projectDir)
+outputPath <- file.path(projectPath)
+dataDir <- "data"
+dataPath <- file.path(projectPath,dataDir)
+prefix <- "Myeloid"
+
+dir.create(file.path(outputPath),recursive = T)
+
+setwd(outputPath)
+
+color.list <- c("#ebac23", "#b80058", "#008cf9",
+                "#006e00", "#00bbad", "#d163e6",
+                "#b24502", "#ff9287", "#5954d6",
+                "#00c6f8", "#878500", "#00a76c",
+                "#bdbdbd", "#846b54",
+                brewer.pal(12, "Paired"),
+                brewer.pal(12, "Set3"),
+                brewer.pal(8, "Pastel2"),
+                colorRampPalette(c("grey20","grey70"))(4))
+```
+
+# Load Counts
+
+```{r}
+sc <- Read10X(file.path(dataPath,"myeloid.counts"))
+sc <- CreateSeuratObject(
+  counts = sc,
+  assay = "RNA",
+  project = "Myeloid",
+  names.field = c(1,2),
+  names.delim = "_",
+  min.cells = 0,
+  min.features = 0
+)
+sc@meta.data$SampleName <- sc@meta.data$orig.ident
+
+table(sc$SampleName)
+```
+
+# Integration by Sample using CCA
+
+```{r}
+cellSet <- "Myeloid"
+subsetName <- "Integrated"
+```
+
+```{r}
+nfeatures <- 2000
+ress <- c(0.5)
+npcs <- 20
+
+bySample <- SplitObject(sc, split.by = "SampleName")
+
+# Integration via CCA protocol
+bySample <- lapply(bySample, function (x) {
+  x <- x %>% NormalizeData(verbose=F) %>%
+    FindVariableFeatures(nfeatures = nfeatures,
+                         verbose=F) %>%
+    ScaleData(verbose=F) %>%
+    RunPCA(verbose=F)
+  return(x)
+})
+
+commonFeatures <- SelectIntegrationFeatures(bySample,
+                                            verbose=F)
+
+smanchors <- FindIntegrationAnchors(bySample,
+                                    anchor.features = commonFeatures,
+                                    verbose=F)
+
+bySample.cca <- IntegrateData(anchorset = smanchors,
+                              features.to.integrate = rownames(bySample[[1]]),
+                              verbose=F)
+
+DefaultAssay(bySample.cca) <- "integrated"
+
+# Run the standard workflow for clustering and visualization of integrated data
+bySample.cca <- bySample.cca %>%
+  ScaleData(verbose = FALSE) %>%
+  RunPCA(verbose = FALSE) %>%
+  FindNeighbors(reduction = "pca",
+                dims = seq(npcs),
+                force.recalc = T,
+                verbose=F) %>%
+  FindClusters(resolution = ress,
+               verbose=F) %>%
+  RunUMAP(reduction = "pca",
+          dims = seq(npcs),
+          verbose=F) %>%
+  RunTSNE(reduction = "pca",
+          dims = seq(npcs),
+          perplexity=100,
+          verbose=F)
+
+# Reannotate clusters
+bySample.cca@meta.data <- bySample.cca@meta.data %>%
+  mutate(across(starts_with("integrated_"),.fns = function (x){paste0("C",x)})) %>%
+  mutate(across(starts_with("integrated_"),.fns = function (x){factor(x)})) %>%
+  mutate(across(starts_with("integrated_"),.fns = function (x){factor(x,levels=mixedsort(levels(x)))}))
+
+saveRDS(bySample.cca,file = file.path(outputPath,paste(cellSet,subsetName,"seurat","rds",sep = ".")))
+
+bySample.cca
+```
+
+```{r}
+clustering <- "integrated_snn_res.0.5"
+```
+
+```{r}
+p1 <- DimPlot(bySample.cca,
+              reduction = "tsne",
+              group.by = "SampleName",
+              cols = color.list)
+p2 <- DimPlot(bySample.cca,
+              reduction = "tsne",
+              group.by = clustering,
+              cols = color.list,
+              label = T)
+p1 + p2
+```
+
+```{r}
+DimPlot(bySample.cca,
+        reduction = "tsne",
+        group.by = clustering,
+        cols = color.list,
+        split.by = "SampleName")
+```
+
+## Cell Identification based in SingleR framework
+
+Clusters and Cells are classified based on SingleR method using Blueprint Encode, the Human Primary Cell Atlas and the Monaco Immune cell type profiles collection. This identification is not precise and should be interpreted with caution.
+
+```{r }
+library(SingleR)
+useAssay <- "RNA"
+
+clustering <- "integrated_snn_res.0.5"
+Idents(bySample.cca) <- clustering
+
+bySample.cca.WT <- subset(bySample.cca,SampleName == "CD11b_WT")
+
+nCores <- 1
+
+immGen=celldex::ImmGenData()
+
+
+singler <- list(
+  byCluster = list()
+)
+
+singler <- SingleR(
+    clusters = Idents(bySample.cca.WT)
+    , test = Seurat::Assays(bySample.cca.WT,slot = useAssay)@data
+    , ref = immGen
+    , labels = immGen$label.fine
+    , genes = "de"
+    , quantile = 0.8
+    , fine.tune = T
+    , tune.thresh = 0.05
+    , sd.thresh = 1
+  )
+
+bySample.cca@meta.data <- bySample.cca@meta.data %>%
+  mutate(immGenLabels = singler[integrated_snn_res.0.5,"first.labels"],
+         immGenFTLabels = singler[integrated_snn_res.0.5,"labels"])
+
+saveRDS(bySample.cca,file = file.path(outputPath,paste(cellSet,subsetName,"seurat","rds",sep=".")))  
+```
+
+```{r}
+p1 <- DimPlot(bySample.cca,
+              reduction = "tsne",
+              group.by = "immGenFTLabels",
+              cols = color.list)
+p2 <- DimPlot(bySample.cca,
+              reduction = "tsne",
+              group.by = clustering,
+              cols = color.list,
+              label = T)
+p1 + p2
+```
+
+```{r}
+df <- Embeddings(bySample.cca,reduction = "tsne")
+df <- cbind(df,bySample.cca@meta.data)
+df <- df %>%
+  mutate(ManualClustering = factor(ifelse(
+    tSNE_1 > -25.5 & integrated_snn_res.0.5 == "C9" ,"C9b",as.character(integrated_snn_res.0.5)
+    ))) %>%
+  mutate(ManualClustering = factor(ManualClustering,levels=mixedsort(levels(ManualClustering))))
+bySample.cca@meta.data$ManualClustering <- df$ManualClustering
+DimPlot(bySample.cca,
+        reduction = "tsne",
+        group.by = "ManualClustering",
+        cols = color.list,label = T,pt.size = 2)
+```
+
+## Get Monocyte Modules from Krenkel et al publication
+
+Data obtained from [Krenkel et. al. Gut 2020](http://dx.doi.org/10.1136/gutjnl-2019-318382). Dataset GSE131834. Clusterized using standard procedures (2000 variable features and 20 PCA components for clustering and dimensionality reduction).
+
+Final annotations to extract cell type signatures imported from original analysis.
+
+```{r}
+krenelMetadata <- read.delim(
+  file = file.path(dataPath,"GSE131834_annotation_bonemarrow.csv"),
+  sep=",", header = T)
+
+colnames(krenelMetadata) <- c("cellId", "cell_type")
+
+krenelMetadata <- krenelMetadata %>%
+  mutate(cellId=sub("-",".",cellId))
+rownames(krenelMetadata) <- krenelMetadata$cellId
+
+krenkelCounts <- read.table(
+  file = file.path(dataPath,"GSE131834_BM_ND_WD_WT16.txt"),
+  sep = "\t",header=T)
+  
+krenkelCounts <- Matrix::Matrix(as.matrix(krenkelCounts))
+
+krenkelSeurat <- CreateSeuratObject(
+    krenkelCounts[,rownames(krenelMetadata)],
+    project = "Krenkel et al",
+    assay = "RNA",
+    meta.data = krenelMetadata
+  )
+  
+nfeatures = 2000
+npcs <- 20
+ress <- c(0.5)
+krenkelSeurat <- krenkelSeurat %>%
+  NormalizeData(
+    verbose = F
+  ) %>%
+  FindVariableFeatures(
+    nfeatures=nfeatures,
+    verbose = F
+  ) %>%
+  ScaleData(
+    verbose = F
+  ) %>%
+  RunPCA(
+    verbose = F
+  ) %>%
+  FindNeighbors(
+    reduction = "pca",
+    dims = seq(npcs),
+    force.recalc=T,
+    verbose = F,
+  ) %>%
+  FindClusters(
+    resolution=ress,
+    verbose = F
+  ) %>%
+  RunUMAP(
+    reduction = "pca",
+    dims = seq(npcs),
+    verbose = F
+  ) %>%
+  RunTSNE(
+    reduction = "pca",
+    dims = seq(npcs),
+    perplexity = 100,
+    verbose = F
+  )
+
+clustering <- "RNA_snn_res.0.5"
+Idents(krenkelSeurat) <- clustering
+```
+
+```{r}
+p1 <- DimPlot(krenkelSeurat,
+              reduction = "tsne",
+              group.by = "RNA_snn_res.0.5",
+              cols = color.list,
+              label = T)
+p2 <- DimPlot(krenkelSeurat, 
+              reduction = "tsne", 
+              group.by = "cell_type",
+              cols = color.list,
+              label = T)
+p1+p2
+```
+
+### Get Krenkel Cell Type Markers
+
+```{r}
+Idents(krenkelSeurat) <- "cell_type"
+markersKrenkel <- krenkelSeurat %>%
+  FindAllMarkers(
+    assay = "RNA",
+    test.use = "wilcox",
+    slot = "data",
+    only.pos = T,
+    verbose = F)
+
+table(markersKrenkel[markersKrenkel$p_val_adj < 0.01,"cluster"])
+```
+
+#### HeatMap of Top 100 Krenkel Cell Type Markers
+
+```{r}
+top100 <- markersKrenkel %>%
+  filter(p_val_adj < 0.01) %>%
+    group_by(cluster) %>%
+    top_n(n = 100, wt = avg_log2FC)
+```
+
+```{r, fig.asp=1.4}
+krenkelSeurat <- ScaleData(krenkelSeurat,
+                    features = unique(sort(c(VariableFeatures(krenkelSeurat),top100$gene))),
+                    verbose = F)
+DoHeatmap(krenkelSeurat, features = top100$gene) + NoLegend()
+```
+
+#### Top 20 Krenkel Markers DotPlot
+
+```{r fig.width=14}
+ntop <- 10
+pval <- 0.01
+
+topMarkers <- markersKrenkel %>%
+  filter(p_val_adj < pval) %>%
+  group_by(cluster) %>%
+  top_n(ntop, avg_log2FC) %>%
+  ungroup() %>%
+  dplyr::select(gene) %>%
+  distinct()
+
+DotPlot(
+  krenkelSeurat,
+  features = rev(topMarkers)
+  ) +
+  theme(axis.text.x = element_text(angle = 45,hjust = 1))
+```
+
+### Select Cell Type Module genes from markers
+
+Gene modules selected from the top 200 marker genes at an adjusted pval < 0.01, a mínimum logFC of 0.25, present in our Stromal dataset and not shared between cell types.
+
+```{r}
+celltypeMarkers <- markersKrenkel %>%
+  filter(p_val_adj < 0.01) %>%
+  filter(avg_log2FC > 0.25) %>%
+  filter(gene %in% rownames(bySample.cca)) %>%
+  group_by(cluster) %>%
+  top_n(n = 200, wt = avg_log2FC) %>%
+  filter(gene %in% rownames(bySample.cca)) %>%
+  dplyr::select(cluster,gene)
+
+whichDup <- unique(sort(celltypeMarkers$gene[which(duplicated(celltypeMarkers$gene))]))
+celltypeMarkers <- celltypeMarkers %>% filter(!gene %in% whichDup)
+
+table(celltypeMarkers$cluster)
+
+krenkelSeurat <- ScaleData(krenkelSeurat,
+                    features = unique(sort(c(VariableFeatures(krenkelSeurat),celltypeMarkers$gene))),
+                    verbose = F)
+DoHeatmap(krenkelSeurat, features = celltypeMarkers$gene) + NoLegend()
+```
+
+```{r}
+moduleGeneListKrenkel <- celltypeMarkers %>%
+  group_by(cluster) %>%
+  group_split()
+moduleGeneListKrenkel <- as.list(moduleGeneListKrenkel)
+names(moduleGeneListKrenkel) <- levels(factor(celltypeMarkers$cluster))
+```
+
+## Get Neutrophil Modules from Xie et al publication
+
+Data obtained from [Xie et. al. Nature 2020](https://www.nature.com/articles/s41590-020-0736-z#article-info). Dataset GSE137539.
+
+Clustering of neutrophils from wt neutrophil samples. Clustering of samples using CCA for integration and batch effect corrections (2000 variable features, 20 PCA components).
+
+Final annotations to extract cell type signatures imported from original analysis.
+
+```{r message=FALSE, warning=FALSE}
+xieMetadata <- read.delim(
+  file = file.path(dataPath,"GSE137539_wt_ctl_meta.txt"),
+  sep="\t", header = T)
+xieMetadata <- xieMetadata %>%
+  mutate(cellId = rownames(.)) %>%
+  dplyr::select(cellId, orig.ident, cell_type, cluster)
+
+myCountsFiles <- dir(file.path(dataPath),pattern = "GSM.+wt_ctl")
+xieCounts <- lapply(myCountsFiles, function (f,dataPath) {
+  sname <- gsub("_",".",gsub("GSM\\d+_(wt_ctl_\\w+).+","\\1",f))
+  counts <- read.table(
+    file = gzfile(file.path(dataPath,f),open = "r"),
+    sep = " ",header=T)
+    colnames(counts) <- paste0(sname,"_",colnames(counts))
+    counts <- Matrix::Matrix(as.matrix(counts))
+},dataPath) 
+
+xieCounts <- do.call(cbind,xieCounts)
+xieCounts <- xieCounts[,rownames(xieMetadata)]
+xieSeurat <- CreateSeuratObject(
+    counts = xieCounts,
+    project = "Xie et al",
+    assay = "RNA",
+    meta.data = xieMetadata,
+    names.delim = "_",
+    names.field = 1
+  )
+xieSeurat <- xieSeurat[,!is.na(xieSeurat$cluster)]
+
+xieSeuratList <- SplitObject(xieSeurat,split.by = "orig.ident")
+  
+xieSeuratList <- lapply(xieSeuratList, function (x) {
+    x <- x %>% NormalizeData(
+      verbose = F
+    ) %>%
+      FindVariableFeatures(
+        nfeatures = nfeatures,
+        verbose = F
+        ) %>%
+      ScaleData(
+        verbose = F
+      ) %>%
+      RunPCA(
+        verbose = F
+      )
+    return(x)
+  })
+  
+commonFeatures <- SelectIntegrationFeatures(xieSeuratList,
+                                            verbose = F)
+  
+smanchors <- FindIntegrationAnchors(
+  xieSeuratList,
+  anchor.features = commonFeatures,
+  verbose = F
+  )
+  
+xieSeurat.cca <- IntegrateData(anchorset = smanchors,
+                               verbose = F)
+  
+DefaultAssay(xieSeurat.cca) <- "integrated"
+  
+# Run the standard workflow for visualization and clustering
+nfeatures <- 2000
+npcs <- 20
+xieSeurat.cca <- xieSeurat.cca %>%
+  ScaleData(
+    verbose = F
+  ) %>%
+  RunPCA(
+    npcs = 50,
+    verbose = F
+  ) %>%
+  FindNeighbors(
+    reduction = "pca",
+    dims = seq(npcs),
+    force.recalc = T,
+    verbose = F
+  ) %>%
+  FindClusters(
+    resolution = ress,
+    verbose = F
+  ) %>%
+  RunUMAP(
+    reduction = "pca",
+    dims = seq(npcs),
+    verbose = F
+  ) %>%
+  RunTSNE(
+    reduction = "pca",
+    dims = seq(npcs),
+    perplexity=100,
+    verbose = F
+  )
+
+clustering <- "integrated_snn_res.0.5"
+Idents(xieSeurat.cca) <- clustering
+```
+
+```{r}
+p1 <- DimPlot(xieSeurat.cca,
+              reduction = "tsne",
+              group.by = clustering,
+              cols = color.list,
+              label = T)
+p2 <- DimPlot(xieSeurat.cca, 
+              reduction = "tsne", 
+              group.by = "cell_type",
+              cols = color.list,
+              label = T)
+p1+p2
+```
+
+```{r}
+p1 <- DimPlot(xieSeurat.cca,
+              reduction = "tsne",
+              group.by = clustering,
+              cols = color.list,
+              label = T)
+p2 <- DimPlot(xieSeurat.cca, 
+              reduction = "tsne", 
+              group.by = "cluster",
+              cols = color.list,
+              label = T)
+p1+p2
+```
+
+### Subset Xie to Bone Marrow derived Neutrophils
+
+Select samples from bone marrow and remove those left at clusters G5 which clearly comes from SP or PB.
+
+```{r}
+xieSeurat.cca <- subset(xieSeurat.cca, orig.ident %in% c("wt.ctl.bm1","wt.ctl.bm2") & cluster %in% c("G0","G1","G2","G3","G4","GM"))
+```
+
+```{r}
+p1 <- DimPlot(xieSeurat.cca,
+              reduction = "tsne",
+              group.by = clustering,
+              cols = color.list,
+              label = T)
+p2 <- DimPlot(xieSeurat.cca, 
+              reduction = "tsne", 
+              group.by = "cluster",
+              cols = color.list,
+              label = T)
+p1+p2
+```
+
+### Get Xie Cell Type Markers
+
+```{r}
+DefaultAssay(xieSeurat.cca) <- "RNA"
+Idents(xieSeurat.cca) <- "cluster"
+markersXie <- xieSeurat.cca %>%
+  FindAllMarkers(
+    assay = "RNA",
+    test.use = "wilcox",
+    slot = "data",
+    only.pos = T,
+    verbose = F)
+
+table(markersXie[markersXie$p_val_adj < 0.01,"cluster"])
+```
+
+#### HeatMap of Top 100 Krenkel Cell Type Markers
+
+```{r}
+top100 <- markersXie %>%
+  filter(p_val_adj < 0.01) %>%
+    group_by(cluster) %>%
+    top_n(n = 100, wt = avg_log2FC)
+```
+
+```{r, fig.asp=1.4}
+xieSeurat.cca <- ScaleData(xieSeurat.cca,
+                    features = unique(sort(c(VariableFeatures(xieSeurat.cca),top100$gene))),
+                    verbose = F)
+DoHeatmap(xieSeurat.cca, features = top100$gene) + NoLegend()
+```
+
+#### Top 20 Krenkel Markers DotPlot
+
+```{r fig.width=14}
+ntop <- 10
+pval <- 0.01
+
+topMarkers <- markersXie %>%
+  filter(p_val_adj < pval) %>%
+  group_by(cluster) %>%
+  top_n(ntop, avg_log2FC) %>%
+  ungroup() %>%
+  dplyr::select(gene) %>%
+  distinct()
+
+DotPlot(
+  xieSeurat.cca,
+  features = rev(topMarkers)
+  ) +
+  theme(axis.text.x = element_text(angle = 45,hjust = 1))
+```
+
+### Select Cell Type Module genes from markers
+
+Gene modules selected from the top 200 marker genes at an adjusted pval < 0.01, a mínimum logFC of 0.25, present in our Stromal dataset and not shared between cell types.
+
+```{r}
+celltypeMarkers <- markersXie %>%
+  filter(p_val_adj < 0.01) %>%
+  filter(avg_log2FC > 0.25) %>%
+  filter(gene %in% rownames(bySample.cca)) %>%
+  group_by(cluster) %>%
+  top_n(n = 100, wt = avg_log2FC) %>%
+  # filter(gene %in% rownames(bySample.cca)) %>%
+  dplyr::select(cluster,gene) %>%
+  filter(cluster != "GM")
+
+whichDup <- unique(sort(celltypeMarkers$gene[which(duplicated(celltypeMarkers$gene))]))
+celltypeMarkers <- celltypeMarkers %>% filter(!gene %in% whichDup)
+
+table(celltypeMarkers$cluster)
+
+xieSeurat.cca <- ScaleData(xieSeurat.cca,
+                    features = unique(sort(c(VariableFeatures(xieSeurat.cca),celltypeMarkers$gene))),
+                    verbose = F)
+DoHeatmap(xieSeurat.cca, features = celltypeMarkers$gene) + NoLegend()
+```
+
+```{r}
+moduleGeneListXie <- celltypeMarkers %>%
+  group_by(cluster) %>%
+  group_split()
+moduleGeneListXie <- as.list(moduleGeneListXie)
+names(moduleGeneListXie) <- levels(factor(celltypeMarkers$cluster))
+```
+
+## Cell Type Module Scores
+
+```{r}
+moduleGeneList <- c(moduleGeneListKrenkel,moduleGeneListXie)
+```
+
+```{r message=FALSE, warning=FALSE}
+for (i in names(moduleGeneList)) {
+  bySample.cca <- AddModuleScore(bySample.cca
+                             ,features = list(i=moduleGeneList[[i]]$gene)
+                             ,name =  paste0(i,".RNAModule")
+                             ,assay = "RNA"
+                             ,verbose = F
+                             )
+}
+```
+
+### Krenkel Cell Type Module Scores Plots
+
+```{r}
+df <- Embeddings(bySample.cca,reduction = "tsne")
+dims <- colnames(df)
+df <- cbind(df,bySample.cca@meta.data)
+```
+
+```{r}
+df %>%
+  filter(SampleName == "CD11b_WT" & !ManualClustering %in% c("C0","C1","C2","C3","C5","C6","C8","C9","C9b","C10")) %>%
+  pivot_longer(cols = contains("X"), names_to = "Module", values_to = "Score") %>%
+  mutate(Module=sub(".RNAModule1","",Module)) %>%
+  ggplot(aes_string(x=dims[1],y=dims[2],color="Score")) +
+  geom_point() +
+  scale_color_gradientn(colors = colorRampPalette(c("grey","orange","red"))(3),name="Log(NormCounts)") +
+  facet_wrap("Module") +
+  theme_classic()
+```
+
+### Xie Cell Type Module Scores Plots
+
+```{r}
+df <- Embeddings(bySample.cca,reduction = "tsne")
+dims <- colnames(df)
+df <- cbind(df,bySample.cca@meta.data)
+```
+
+```{r}
+df %>%
+  filter(SampleName == "CD11b_WT" & ManualClustering %in% c("C0","C1","C2","C3","C5","C6","C8","C9","C9b","C10")) %>%
+  pivot_longer(cols = contains(c("G0","G1","G2","G3","G4")), names_to = "Module", values_to = "Score") %>%
+  mutate(Module=sub(".RNAModule1","",Module)) %>%
+  ggplot(aes_string(x=dims[1],y=dims[2],color="Score")) +
+  geom_point() +
+  scale_color_gradientn(colors = colorRampPalette(c("grey","orange","red"))(3),name="Log(NormCounts)") +
+  facet_wrap("Module") +
+  theme_classic()
+```
+
+### Module Asingments to Clusters
+
+Cluster assigned to the maximum enrichment module score +- 0.02. Some clusters may score two modules or more as maximum.
+
+Analysis based on WT transcriptome only.
+
+### Monocyte Krenkel Modules
+
+```{r}
+clustering <- "ManualClustering"
+bySample.cca@meta.data %>%
+  filter(SampleName == "CD11b_WT" & !ManualClustering %in% c("C0","C1","C2","C3","C5","C6","C8","C9","C9b","C10")) %>%
+  dplyr::select(contains(c(clustering,"Module1"))) %>%
+  dplyr::select(-contains(c("G0","G1","G2","G3","G4"))) %>%
+  pivot_longer(cols = contains("RNAModule1"),names_to = "Module",values_to = "Score") %>%
+  rename(Cluster=clustering) %>%
+  group_by(Module) %>%
+  summarise(Score=scale(Score,center = T,scale = T),Cluster=Cluster) %>%
+  group_by(Cluster,Module) %>%
+  summarise(AverageScore=mean(Score)) %>%
+  group_by(Cluster) %>%
+  summarise(Module=Module,AverageScoreScaled=scale(AverageScore),MaxEnrichment=(AverageScore >= (max(AverageScore)-0.02))) %>%
+  mutate(Module=sub(".RNAModule1","",Module)) %>%
+  mutate(plotBorder=ifelse(MaxEnrichment,1.5,0)) %>%
+  ggplot() +
+  geom_point(aes_string(x="Module",y="Cluster",fill="AverageScoreScaled",color="MaxEnrichment", stroke = "plotBorder"),size=6,shape=21) +
+  scale_fill_gradient(low = "grey90",high = "blue") +
+  scale_color_manual(values = c(NA,"red")) +
+  theme(axis.text.x = element_text(angle = 45,hjust = 1))
+```
+
+```{r message=FALSE, warning=FALSE}
+# Assign Sommerkamp cell type to clusters using WT info
+clustering <- "ManualClustering"
+cellTypeAnnot <- bySample.cca@meta.data %>%
+  filter(SampleName == "CD11b_WT" & !ManualClustering %in% c("C0","C1","C2","C3","C5","C6","C8","C9","C9b","C10")) %>%
+  dplyr::select(contains(c(clustering,"Module1"))) %>%
+  dplyr::select(-contains(c("G0","G1","G2","G3","G4"))) %>%
+  pivot_longer(cols = contains("RNAModule1"),names_to = "Module",values_to = "Score") %>%
+  rename(Cluster=clustering) %>%
+  group_by(Module) %>%
+  summarise(Score=scale(Score,center = T,scale = T),Cluster=Cluster) %>%
+  group_by(Cluster,Module) %>%
+  summarise(AverageScore=mean(Score)) %>%
+  group_by(Cluster) %>%
+  summarise(Module=Module,AverageScoreScaled=scale(AverageScore),MaxEnrichment=(AverageScore >= (max(AverageScore)-0.02))) %>%
+  mutate(Module=sub(".RNAModule1","",Module)) %>%
+  mutate(Selected=ifelse(MaxEnrichment,1,0)) %>%
+  filter(Selected == 1) %>%
+  group_by(Cluster) %>%
+  summarise(CellType1 = paste(Module,collapse="_"))
+
+cellTypeAnnot <- cellTypeAnnot %>%
+  mutate(CellType1 = sub("\\.","_",sub("^X\\d+\\.","",CellType1,perl=T)))
+```
+
+```{r}
+bySample.cca@meta.data <- bySample.cca@meta.data %>%
+  left_join(cellTypeAnnot, by = c("ManualClustering" = "Cluster")) %>% as.data.frame()
+rownames(bySample.cca@meta.data) = colnames(bySample.cca)
+```
+
+```{r}
+p1 <- DimPlot(bySample.cca,
+              reduction = "tsne",
+              group.by = clustering,
+              cols = color.list,
+              label = T) + theme(legend.position = "none")
+p2 <- DimPlot(bySample.cca, 
+              reduction = "tsne", 
+              group.by = "CellType1",
+              cols = color.list,
+              label = F)
+p1+p2
+```
+
+### Neutrophils Xie Modules
+
+```{r}
+clustering <- "ManualClustering"
+bySample.cca@meta.data %>%
+  filter(SampleName == "CD11b_WT" & ManualClustering %in% c("C0","C1","C2","C3","C5","C6","C8","C9","C9b","C10")) %>%
+  dplyr::select(contains(c(clustering,"G0","G1","G2","G3","G4"))) %>%
+  pivot_longer(cols = contains("RNAModule1"),names_to = "Module",values_to = "Score") %>%
+  rename(Cluster=clustering) %>%
+  group_by(Module) %>%
+  summarise(Score=scale(Score,center = T,scale = T),Cluster=Cluster) %>%
+  group_by(Cluster,Module) %>%
+  summarise(AverageScore=mean(Score)) %>%
+  group_by(Cluster) %>%
+  summarise(Module=Module,AverageScoreScaled=scale(AverageScore),MaxEnrichment=(AverageScore >= (max(AverageScore)-0.02))) %>%
+  mutate(Module=sub(".RNAModule1","",Module)) %>%
+  mutate(plotBorder=ifelse(MaxEnrichment,1.5,0)) %>%
+  ggplot() +
+  geom_point(aes_string(x="Module",y="Cluster",fill="AverageScoreScaled",color="MaxEnrichment", stroke = "plotBorder"),size=6,shape=21) +
+  scale_fill_gradient(low = "grey90",high = "blue") +
+  scale_color_manual(values = c(NA,"red")) +
+  theme(axis.text.x = element_text(angle = 45))
+```
+
+```{r message=FALSE, warning=FALSE}
+# Assign Sommerkamp cell type to clusters using WT info
+clustering <- "ManualClustering"
+cellTypeAnnot <- bySample.cca@meta.data %>%
+  filter(SampleName == "CD11b_WT" & ManualClustering %in% c("C0","C1","C2","C3","C5","C6","C8","C9","C9b","C10")) %>%
+  dplyr::select(contains(c(clustering,"G0","G1","G2","G3","G4"))) %>%
+  pivot_longer(cols = contains("RNAModule1"),names_to = "Module",values_to = "Score") %>%
+  rename(Cluster=clustering) %>%
+  group_by(Module) %>%
+  summarise(Score=scale(Score,center = T,scale = T),Cluster=Cluster) %>%
+  group_by(Cluster,Module) %>%
+  summarise(AverageScore=mean(Score)) %>%
+  group_by(Cluster) %>%
+  summarise(Module=Module,AverageScoreScaled=scale(AverageScore),MaxEnrichment=(AverageScore >= (max(AverageScore)-0.02))) %>%
+  mutate(Module=sub(".RNAModule1","",Module)) %>%
+  mutate(Selected=ifelse(MaxEnrichment,1,0)) %>%
+  filter(Selected == 1) %>%
+  group_by(Cluster) %>%
+  summarise(CellType2 = paste(Module,collapse="_"))
+```
+
+```{r}
+bySample.cca@meta.data <- bySample.cca@meta.data %>%
+  left_join(cellTypeAnnot, by = c("ManualClustering" = "Cluster")) %>% as.data.frame()
+rownames(bySample.cca@meta.data) = colnames(bySample.cca)
+```
+
+```{r}
+p1 <- DimPlot(bySample.cca,
+              reduction = "tsne",
+              group.by = clustering,
+              cols = color.list,
+              label = T) + theme(legend.position = "none")
+p2 <- DimPlot(bySample.cca, 
+              reduction = "tsne", 
+              group.by = "CellType2",
+              cols = color.list,
+              label = F)
+p1+p2
+```
+
+
+```{r}
+bySample.cca@meta.data <- bySample.cca@meta.data  %>%
+  mutate(CellType1 = ifelse(is.na(CellType1),CellType2,CellType1)) %>% dplyr::select(-CellType2)
+```
+
+
+### Cell Type By Cluster
+
+```{r}
+p1 <- DimPlot(bySample.cca,
+              reduction = "tsne",
+              group.by = clustering,
+              cols = color.list,
+              label = T) + theme(legend.position = "none")
+p2 <- DimPlot(bySample.cca, 
+              reduction = "tsne", 
+              group.by = "CellType1",
+              cols = color.list,
+              label = F)
+p1+p2
+```
+
+### Cell Type By Condition
+
+```{r}
+DimPlot(bySample.cca,
+        reduction = "tsne",
+        group.by = "CellType1",
+        cols = color.list,
+        split.by = "SampleName")
+```
+
+
+### Cell Type Proportions
+
+```{r}
+bySample.cca@meta.data %>%
+  ggplot(aes(x="",fill=CellType1)) +
+  geom_bar(stat="count",position="fill") +
+  coord_polar("y",start = 0) +
+  scale_fill_manual(values = color.list) +
+  facet_wrap("SampleName") +
+  theme(axis.line = element_blank(),
+        axis.text = element_blank(),
+        axis.title = element_blank(),
+        panel.background = element_blank())
+```
+
+```{r}
+bySample.cca@meta.data %>%
+  group_by(SampleName) %>%
+  count(
+    CellType1
+  ) %>%
+  pivot_wider(id_cols = SampleName, names_from = CellType1, values_from = n)
+```
+
+## Marker Genes for each cell type
+
+Based on WT transcriptomes.
+
+```{r}
+clustering <- "CellType1"
+
+Idents(bySample.cca) <- clustering
+
+minPct <- 30
+pval <- 0.01
+useAssay <- "RNA"
+method <- "wilcox"
+
+DefaultAssay(bySample.cca) <- useAssay
+bySample.cca.WT <- subset(bySample.cca, SampleName == "CD11b_WT")
+```
+
+```{r }
+markers <- bySample.cca.WT %>%
+  FindAllMarkers(
+    assay = useAssay
+    , slot = "data"
+    , min.pct = minPct/100
+    , return.thresh = pval
+    , test.use = method
+    , verbose = F
+    , only.pos = T
+  )
+```
+
+```{r }
+markers %>%
+  filter(p_val_adj < pval) %>%
+  group_by(cluster) %>%
+  count()
+```
+
+### Top 30 Markers Heatmap
+
+```{r fig.asp=1.4}
+ntop <- 30
+
+topMarkers <- markers %>% 
+  filter(p_val_adj < pval) %>%
+  group_by(cluster) %>%
+  top_n(ntop, avg_log2FC)
+
+bySample.cca <- bySample.cca %>%
+  ScaleData(features = c(VariableFeatures(.),topMarkers$gene),
+            assay = useAssay,
+            verbose = F)
+
+bySample.cca %>%
+  DoHeatmap(assay = useAssay,
+            features = topMarkers$gene,
+            group.colors = color.list)
+```
+
+### Top 9 Markers Expression
+
+```{r fig.width=12,fig.asp=0.7}
+ntop <- 9
+for (myCluster in levels(markers$cluster)) {
+  topMarkers <- markers %>% 
+  filter(p_val_adj < pval & cluster == myCluster) %>%
+  top_n(ntop, avg_log2FC)
+  
+  print(bySample.cca %>%
+    FeaturePlot(features = topMarkers$gene,
+                reduction = "tsne") +
+      NoLegend() +
+      plot_annotation(
+        title = paste("Markers for cell type:",myCluster
+                      )
+))
+}
+```
+
+### Top 10 Markers DotPlot
+
+```{r fig.width=14}
+ntop <- 10
+pvalcut <- 0.01
+
+topMarkers <- markers %>%
+  filter(p_val_adj < pval) %>%
+  group_by(cluster) %>%
+  top_n(ntop, avg_log2FC) %>%
+  ungroup() %>%
+  dplyr::select(gene) %>%
+  distinct()
+
+DotPlot(
+  bySample.cca,
+  assay = useAssay,
+  group.by = clustering,
+  features = rev(topMarkers)
+  ) +
+  theme(axis.text.x = element_text(angle = 45,hjust = 1))
+```
+
+## Differences between Conditions for each Cell Type
+
+Within each Cell Type we have tested the differences between KO and WT conditions.
+
+```{r}
+tde.files <- NULL
+contrastByCond <- list()
+useAssay <- "RNA"
+clustering <- "CellType1"
+testUse <- "wilcox"
+minPct <- 0.1
+
+cond1 <- "CD11b_KO"
+cond2 <- "CD11b_WT"
+
+DefaultAssay(bySample.cca) <- useAssay
+
+bySample.cca <- bySample.cca %>%
+  SetIdent(value = paste(bySample.cca$CellType1,bySample.cca$SampleName,sep="."))
+
+deGenes <- list()
+for (myCluster in levels(factor(bySample.cca$CellType1))) {
+        
+        ident1 <- paste(myCluster,cond1,sep=".")
+        ident2 <- paste(myCluster,cond2,sep=".")
+        
+        deGenes[[myCluster]] <- bySample.cca %>%
+          FindMarkers(
+            assay = useAssay
+            , slot = "data"
+            , ident.1 = ident1
+            , ident.2 = ident2
+            , min.pct = minPct
+            , test.use = testUse
+            , verbose = F
+          ) %>%
+          mutate(gene = rownames(.),
+                 cluster = myCluster)
+}
+
+Idents(bySample.cca) <- clustering
+```
+
+```{r}
+pval <- 0.01
+
+deGenes <- do.call(rbind,deGenes)
+
+deGenes %>%
+  filter(p_val_adj < pval) %>%
+  group_by(cluster) %>%
+  count()
+```
+
+### Top 10 Differences DotPlot
+
+```{r fig.width=14}
+ntop <- 10
+pvalcut <- 0.01
+
+topDeGenes <- deGenes %>%
+  filter(p_val_adj < pval) %>%
+  group_by(cluster) %>%
+  top_n(ntop, avg_log2FC) %>%
+  ungroup() %>%
+  dplyr::select(gene) %>%
+  distinct()
+
+DotPlot(
+  bySample.cca,
+  assay = "RNA",
+  group.by = clustering,
+  features = rev(topDeGenes),
+  split.by = "SampleName"
+  ) +
+  theme(axis.text.x = element_text(angle = 45,hjust = 1))
+```
+
+## Il1B and Il1rn Expression
+
+```{r}
+df <- Embeddings(bySample.cca,reduction = "tsne")
+dnames <- colnames(df)
+df <- cbind(df,bySample.cca@meta.data)
+df <- cbind(df,FetchData(bySample.cca,vars = c("Il1b","Il1rn")))
+```
+
+```{r}
+df %>%
+  arrange(Il1b) %>%
+  ggplot(aes_string(x=dnames[1],y=dnames[2])) +
+  geom_point(aes_string(color="Il1b")) +
+  facet_wrap("SampleName") +
+  ggtitle("Il1b") +
+  scale_color_gradientn(colors = colorRampPalette(c("grey","orange","red"))(3),name="Log(NormCounts)") +
+  theme_classic()
+```
+
+```{r}
+df %>%
+  arrange(Il1rn) %>%
+  ggplot(aes_string(x=dnames[1],y=dnames[2])) +
+  geom_point(aes_string(color="Il1rn")) +
+  facet_wrap("SampleName") +
+  ggtitle("Il1rn") +
+  scale_color_gradientn(colors = colorRampPalette(c("grey","orange","red"))(3),name="Log(NormCounts)") +
+  theme_classic()
+```
+
+```{r fig.width=14, fig.asp=0.5}
+df %>%
+  mutate(Il1Exp = case_when(
+    Il1b>0 & Il1rn == 0 ~ "Il1b only",
+    Il1b==0 & Il1rn > 0 ~ "Il1rn only",
+    Il1b>0 & Il1rn > 0 ~ "Il1b and Il1rn")) %>%
+ ggplot(aes(x="",fill=Il1Exp)) +
+  geom_bar(stat="count",position="fill") +
+  coord_polar("y",start = 0) +
+  scale_fill_manual(values = color.list) +
+  facet_wrap(c("SampleName","CellType1"),ncol = 6) +
+  theme(axis.line = element_blank(),
+        axis.text = element_blank(),
+        axis.title = element_blank(),
+        panel.background = element_blank())
+```
+
+## Il1b vs Il1rn
+
+```{r}
+p <- df %>%
+  filter(SampleName == "CD11b_WT")  %>%
+  mutate(Il1Exp = case_when(
+    Il1b>0 & Il1rn == 0 ~ "Il1b only",
+    Il1b==0 & Il1rn > 0 ~ "Il1rn only",
+    Il1b>0 & Il1rn > 0 ~ "Il1b and Il1rn")) %>%
+  ggplot(aes(x=Il1rn,y=Il1b)) +
+  ggtitle("Myeloid WT Cells") +
+  geom_point() +
+  theme_classic()
+
+ggMarginal(p,type = "densigram")
+```
+
+
+## Violin plots on Selected Genes
+
+```{r}
+selectedGenes <- c("Lyn","Hif1a","Lmo4","Csf2rb","Myd88","Cxcr2","Nfkbia","Cebpb")
+```
+
+```{r}
+df <- FetchData(bySample.cca,vars = selectedGenes)
+df <- cbind(df,bySample.cca@meta.data)
+df <- df %>% mutate(SampleName=factor(SampleName,levels = c("CD11b_WT","CD11b_KO")))
+```
+
+```{r}
+library(stringr)
+pList <- list()
+for (gene in selectedGenes) {
+  pList[[length(pList)+1]] <- ggplot(df,aes_string(y=gene,x="SampleName",color="SampleName",fill="SampleName")) +
+    geom_violin(stat = "ydensity",alpha=0.2) +
+    # geom_jitter(alpha=1) +
+    scale_color_manual(values = c("grey40","#a80a0b")) +
+    scale_fill_manual(values = c("grey40","#a80a0b")) +
+    stat_summary(fun = "mean",
+               geom = "crossbar", 
+               width = 0.5,
+               colour = "black") +
+    ylab("Expression Level log(NormCounts+1)") +
+    ggtitle(str_to_title(gene)) +
+    facet_wrap("CellType1",nrow = 1) +
+    theme_classic() +
+    theme(axis.text.x = element_text(angle = 90),legend.position = "none")
+}
+
+p <- lapply(pList,plot)
+```
+
+# Session Info
+
+```{r}
+sessionInfo()
+```
+
+
