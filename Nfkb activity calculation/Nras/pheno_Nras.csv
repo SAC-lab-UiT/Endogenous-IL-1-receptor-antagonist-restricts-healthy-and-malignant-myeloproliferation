@@ -1,0 +1,25 @@
+ID	Sample	Color	Type	Group	Include	File	Dups	Remarks
+X335_MPP_rawCount	335_MPP	blue	control	MPP	1	X335_MPP_rawCount	0	All RNASeq samples
+X335_ST_rawCount	335_ST	blue	control	ST	1	X335_ST_rawCount	0	
+X335_LT_rawCount	335_LT	blue	control	LT	1	X335_LT_rawCount	0	Controls
+X336_LT_rawCount	336_LT	red	trans	LT	1	X336_LT_rawCount	0	Transgenic
+X336_ST_rawCount	336_ST	red	trans	ST	1	X336_ST_rawCount	0	
+X336_MPP_rawCount	336_MPP	red	trans	MPP	1	X336_MPP_rawCount	0	LT- Long-term hematopoietic stem cells
+X276_ST_rawCount	276_ST	red	trans	ST	1	X276_ST_rawCount	0	ST- Short-term hematopoietic stem cells
+X276_LT_rawCount	276_LT	red	trans	LT	1	X276_LT_rawCount	0	MPP- Multipotent progenitors
+X276_MPP_rawCount	276_MPP	red	trans	MPP	1	X276_MPP_rawCount	0	
+X340_MMP_rawCount	340_MMP	blue	control	MPP	1	X340_MMP_rawCount	0	
+X340_ST_rawCount	340_ST	blue	control	ST	1	X340_ST_rawCount	0	
+X340_LT_rawCount	340_LT	blue	control	LT	1	X340_LT_rawCount	0	
+X285_ST_rawCount	285_ST	red	trans	ST	1	X285_ST_rawCount	0	
+X285_LT_rawCount	285_LT	red	trans	LT	1	X285_LT_rawCount	0	
+X285_MPP_rawCount	285_MPP	red	trans	MPP	1	X285_MPP_rawCount	0	
+X312_MPP_rawCount	312_MPP	blue	control	MPP	1	X312_MPP_rawCount	0	
+X312_LT_rawCount	312_LT	blue	control	LT	1	X312_LT_rawCount	0	
+X312_ST_rawCount	312_ST	blue	control	ST	1	X312_ST_rawCount	0	
+X351_CD63_rawCount	351_CD63	blue	control	CD63	1	X351_CD63_rawCount	0	Mesenchymal compartment
+X360_CD63_rawCount	360_CD63	red	trans	CD63	1	X360_CD63_rawCount	0	
+X362_CD63_rawCount	362_CD63	blue	control	CD63	1	X362_CD63_rawCount	0	
+X261_93_CD63_rawCount	261_93_CD63	blue	control	CD63	1	X261_93_CD63_rawCount	0	
+X95_102_CD63_rawCount	95_102_CD63	red	trans	CD63	1	X95_102_CD63_rawCount	0	
+X155_262_CD63_rawCount	155_262_CD63	red	trans	CD63	1	X155_262_CD63_rawCount	0	very few cells so two mice were pooled in 3 of the samples
