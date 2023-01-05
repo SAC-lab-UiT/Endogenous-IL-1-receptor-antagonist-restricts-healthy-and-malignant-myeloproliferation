@@ -1,0 +1,304 @@
+# Study accession: phs001027.v2.p1
+# Table accession: pht005216.v1.p1.c1
+# Consent group: General Research Use (PUB)
+# Citation instructions: The study accession (phs001027.v2.p1) is used to cite the study and its data tables and documents. The data in this file should be cited using the accession pht005216.v1.p1.c1.
+# To cite columns of data within this file, please use the variable (phv#) accessions below:
+#
+# 1) the table name and the variable (phv#) accessions below; or
+# 2) you may cite a variable as phv#.v1.p1.c1.
+
+##	phv00258410.v1.p1.c1	phv00258411.v1.p1.c1	phv00258412.v1.p1.c1	phv00258413.v1.p1.c1	phv00258414.v1.p1.c1	phv00258415.v1.p1.c1	phv00258416.v1.p1.c1	phv00258417.v1.p1.c1	phv00258418.v1.p1.c1
+dbGaP_Subject_ID	SUBJECT_ID	Age	Disease_stage	sex	Cytogenetics	mutGenes	FAB	WBC	TTR
+1410214	AML_001	35	Diagnosis	M	"46,XY"	None	unknown	40	146
+1410214	AML_001	35	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410215	AML_002	51	Diagnosis	F	"46,XX"	"FLT3-TKD, NPM1"	unknown	10	901
+1410215	AML_002	53	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410216	AML_003	36	Diagnosis	F	"46,XX,del(7)(q22),inv(16)(p13q22)[17]/46,XX,del(7)(q22),del(9)(p22),inv(16)(p13q22)[2]/46,XX[1]"	None	unknown	0	203
+1410216	AML_003	36	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410217	AML_004	48	Diagnosis	M	"46,XY,inv(16)(p13q22)"	None	unknown	85	323
+1410217	AML_004	48	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410218	AML_005	50	Diagnosis	M	"46,XY"	"FLT3-ITD, FLT3-TKD, NPM1"	unknown	44	599
+1410218	AML_005	51	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410219	AML_006	54	Diagnosis	M	"46,XY"	"NPM1, FLT3-ITD"	unknown	29	394
+1410219	AML_006	55	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410220	AML_007	55	Diagnosis	M	"47,XY,+8,t(9;16)(p22;q24)[19]/46,XY[2]"	None	unknown	27	482
+1410220	AML_007	56	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410221	AML_008	39	Diagnosis	M	"46,XY"	"FLT3-ITD, NPM1"	unknown	77	129
+1410221	AML_008	40	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410222	AML_009	58	Diagnosis	F	"46,XX,t(6;11)(q27;q23)"	None	unknown	53	757
+1410222	AML_009	61	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410223	AML_010	28	Diagnosis	M	"46,XY"	"FLT3-ITD, NPM1"	unknown	unknown	308
+1410223	AML_010	29	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410224	AML_011	60	Diagnosis	M	"46,XY"	NPM1	unknown	0	1274
+1410224	AML_011	64	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410225	AML_012	58	Diagnosis	M	"47,XY,+8[4]/46,XY[18]"	None	unknown	3	865
+1410225	AML_012	60	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410226	AML_014	38	Diagnosis	F	"46,XX,ins(21;8)(q22;q22q22)[19]/46,XX,del(9)(q22q32),ins(21;8)(q22;q22q22)[3]"	None	unknown	24	284
+1410226	AML_014	39	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410227	AML_015	41	Diagnosis	M	"46,XY"	None	unknown	87	298
+1410227	AML_015	42	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410228	AML_016	54	Diagnosis	F	"46,XX"	"FLT3-TKD, NPM1"	unknown	60	84
+1410228	AML_016	54	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410229	AML_017	52	Diagnosis	F	"46,XX,t(8;21)(q22;q22)[10]/46,XX[6]"	None	unknown	35	397
+1410229	AML_017	53	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410230	AML_018	55	Diagnosis	F	"48,XX,+8,+19"	None	unknown	90	400
+1410230	AML_018	56	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410231	AML_019	49	Diagnosis	F	"46,XX"	None	unknown	8	232
+1410231	AML_019	50	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410232	AML_020	52	Diagnosis	M	"46,XY"	NPM1	unknown	56	748
+1410232	AML_020	54	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410233	AML_021	57	Diagnosis	M	"47,XY,+11[23]/46,XY[1]"	FLT3-ITD	unknown	85	496
+1410233	AML_021	58	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410234	AML_022	47	Diagnosis	F	"46,XX"	NPM1	unknown	66	1449
+1410234	AML_022	51	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410235	AML_023	56	Diagnosis	F	"46,XX,del(9)(q13q22)[12]/46,XX[9]"	"FLT3-ITD, NPM1"	unknown	77	153
+1410235	AML_023	57	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410236	AML_024	39	Diagnosis	M	"46,XY"	"FLT3-ITD, CEBPA"	unknown	93	416
+1410236	AML_024	40	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410237	AML_025	39	Diagnosis	M	"46,XY"	NPM1	unknown	79	360
+1410237	AML_025	40	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410238	AML_026	58	Diagnosis	M	"46,XY"	None	unknown	unknown	72
+1410238	AML_026	59	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410239	AML_027	28	Diagnosis	F	"45,X,-X,t(8;21)(q22;q22)[23]/45,X,-X,t(8;21)(q22;q22),del(9)(q13q22)[5]/46,XX[2]"	None	unknown	24	239
+1410239	AML_027	29	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410240	AML_028	46	Diagnosis	M	"46,XY"	NPM1	unknown	unknown	1744
+1410240	AML_028	50	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410241	AML_029	59	Diagnosis	M	"46,XY,inv(9)(p13q22)c"	None	unknown	2	238
+1410241	AML_029	59	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410242	AML_030	53	Diagnosis	M	"46,XY"	NPM1	unknown	7	285
+1410242	AML_030	54	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410243	AML_031	33	Diagnosis	M	"46,XY"	CEBPA biallelic mutated	unknown	79	344
+1410243	AML_031	34	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410244	AML_032	27	Diagnosis	F	"46,XX"	CEBPA biallelic mutated	unknown	91	236
+1410244	AML_032	28	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410245	AML_033	38	Diagnosis	M	"46,XY"	"FLT3-ITD, NPM1"	unknown	49	209
+1410245	AML_033	39	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410246	AML_034	22	Diagnosis	M	"46,XY,inv(16)(p13q22)[9]/46,XY[8]"	None	unknown	0	626
+1410246	AML_034	24	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410247	AML_035	42	Diagnosis	F	"46,XX"	"FLT3-TKD, NPM1"	unknown	12	219
+1410247	AML_035	42	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410248	AML_036	49	Diagnosis	F	"46,XX"	CEBPA biallelic mutated	unknown	60	930
+1410248	AML_036	51	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410249	AML_037	52	Diagnosis	M	"46,XY"	NPM1	unknown	29	858
+1410249	AML_037	54	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410250	AML_038	56	Diagnosis	M	"46,XY"	CEBPA biallelic mutated	unknown	unknown	609
+1410250	AML_038	57	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410251	AML_040	59	Diagnosis	F	"46,XX"	None	unknown	unknown	115
+1410251	AML_040	60	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410252	AML_041	53	Diagnosis	F	"46,XX"	NPM1	unknown	19	573
+1410252	AML_041	55	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410253	AML_042	29	Diagnosis	F	"46,XX,inv(16)(p13q22)[23]/46,XX[2]"	None	unknown	80	162
+1410253	AML_042	29	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410254	AML_043	55	Diagnosis	M	"46,XY"	NPM1	unknown	78	250
+1410254	AML_043	56	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410255	AML_044	54	Diagnosis	M	"45,XY,-5,-7,del(12)(p11p13),add(14)(q22),-15,-17,add(17)(p11),-18,+add(21)(p10),+3mar"	None	unknown	25	361
+1410255	AML_044	55	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410256	AML_045	25	Diagnosis	M	"46,XY,t(1;6)(p22;p21),t(8;21)(q22;q22)[22]/46,XY[4]"	None	unknown	56	439
+1410256	AML_045	26	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410257	AML_046	54	Diagnosis	M	"46,XY,del(9)(q13q22)[21]/46,XY[9]"	"FLT3-TKD, NPM1"	unknown	89	198
+1410257	AML_046	55	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410258	AML_047	30	Diagnosis	M	"45,X,-Y,t(8;21)(q22;q22)[15]/46,XY[5]"	None	unknown	unknown	307
+1410258	AML_047	31	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410259	AML_048	59	Diagnosis	M	"43-45,XY,der(5)t(5;13)q22;q31),-7,?dup(9)(p11p13),-12,-16,-17,-18,-22,+3-5mar"	None	unknown	4	77
+1410259	AML_048	59	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410260	AML_049	44	Diagnosis	M	"46,XY"	"FLT3-TKD, NPM1"	unknown	77	340
+1410260	AML_049	45	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410261	AML_050	45	Diagnosis	M	"46,XY"	NPM1	unknown	6	790
+1410261	AML_050	47	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410262	AML_051	51	Diagnosis	M	"46,XY"	"FLT3-ITD, NPM1"	unknown	57	269
+1410262	AML_051	51	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410263	AML_052	20	Diagnosis	F	"46,XX,t(11;19)(q23;p13.1)[17]/46,XX[3]"	None	unknown	2	218
+1410263	AML_052	20	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410264	AML_053	48	Diagnosis	M	"46,XY[22]"	"FLT3-ITD, NPM1"	unknown	22	398
+1410264	AML_053	49	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410265	AML_054	53	Diagnosis	F	"46,XX[20]"	None	unknown	17	
+1410265	AML_054	54	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410266	AML_055	47	Diagnosis	F	"50,XX,+8,+8+,9,+11"	None	unknown	2	151
+1410266	AML_055	47	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410267	AML_056	58	Diagnosis	M	"47,XY,+8[7]/46,XY[3]"	None	M7	5	1028
+1410267	AML_056	61	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410268	AML_057	44	Diagnosis	M	"46,XY"	FLT3-ITD	M1	78	404
+1410268	AML_057	46	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410269	AML_058	46	Diagnosis	F	"46,XX"	"FLT3-ITD, NPM1"	M5	66	335
+1410269	AML_058	47	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410270	AML_059	53	Diagnosis	F	"46,XX,del(5)(q22q31)"	None	M5	27	331
+1410270	AML_059	54	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410271	AML_060	32	Diagnosis	F	"46,XX"	None	M4	1	912
+1410271	AML_060	34	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410272	AML_061	49	Diagnosis	M	"46,XY,t(8;21)(q22;q22)[2]/46,XY,del(9)(q13q22),t(8;21)(q22;q22)[5]"	None	M1	46	602
+1410272	AML_061	50	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410273	AML_062	41	Diagnosis	M	"46,XY,del(9)(q22q34)[2]/46,XY[13]"	"FLT3-TKD, NPM1"	M4	26	1043
+1410273	AML_062	44	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410274	AML_063	57	Diagnosis	M	"46,XY,del(5)(q13q31),t(7;22)(q22;q11),t(9;12)(q22;p13)"	None	M4	9	205
+1410274	AML_063	57	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410275	AML_064	51	Diagnosis	F	"46,XX,t(6;9)(p23;q34)"	"FLT3-ITD, FLT3-TKD"	M4	35	149
+1410275	AML_064	51	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410276	AML_065	31	Diagnosis	F	"46,XX"	NPM1	M5	79	390
+1410276	AML_065	33	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410277	AML_066	48	Diagnosis	M	"42,XY,add(2)(p21),+2,-5,-7,-11,der(11)t(11;?)(p10;?),-14,del(16)(p12),-17,-18,-19,-20,-21,+3mar[20]"	None	M4	unknown	474
+1410277	AML_066	50	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410278	AML_067	49	Diagnosis	F	"46,XX"	None	unknown	1	1508
+1410278	AML_067	53	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410279	AML_068	53	Diagnosis	M	"46,XY "	NPM1	M2	68	257
+1410279	AML_068	54	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410280	AML_069	39	Diagnosis	M	"46,XY"	FLT3-ITD	unknown	1	186
+1410280	AML_069	39	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410281	AML_070	33	Diagnosis	M	"46,XY"	"FLT3-ITD, CEBPA biallelic mutated"	M4	35	295
+1410281	AML_070	35	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410282	AML_071	71	Diagnosis	M	"46,XY"	NPM1	M6	2	342
+1410282	AML_071	71	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410283	AML_072	71	Diagnosis	F	"46,XX,t(12;14)(p11;q32)"	"FLT3-ITD, NPM1"	M2	69	214
+1410283	AML_072	72	Relapse	F	unknown	unknown	unknown	unknown	N/A
+1410284	AML_073	61	Diagnosis	M	"45,XY,-7"	None	unknown	4	686
+1410284	AML_073	63	Relapse	M	unknown	unknown	unknown	unknown	N/A
+1410285	AML_074	71	Diagnosis	M	"49,XY,+13,+13,+19 [21]"	None	unknown	unknown	398
+1410285	AML_074	72	Relapse	M	"49,XY,+13,+13,+19"	unknown	unknown	7.2	N/A
+1410286	AML_075	49	Diagnosis	F	"46,XX, INV(16) [22]"	None	unknown	unknown	441
+1410286	AML_075	50	Relapse	F	"46,XX,inv(16)(p13q22)[7] /46,XX[13] "	unknown	unknown	2.9	N/A
+1410287	AML_076	62	Diagnosis	F	"46,XX [20]"	NPM1	unknown	unknown	413
+1410287	AML_076	63	Relapse	F	"46,XX,t(2;17;6)(q2?4;q1?2;q2?3)?del(2)(q24q31)"	"NPM1,FLT3-TKD"	unknown	2.3	N/A
+1410288	AML_077	56	Diagnosis	F	"46, XX [36]"	None	M1	0.5	1245
+1410288	AML_077	60	Relapse	F	"46,XX"	None	M1	3.4	N/A
+1410289	AML_078	31	Diagnosis	F	"46,XX,inv(16)(p13q22)[8]/47,XX,+8,inv(16)(p13q22)[12]"	None	M4	26.8	398
+1410289	AML_078	32	Relapse	F	unknown	None	M4	2.2	N/A
+1410290	AML_079	54	Diagnosis	F	"47, XX, +21 [21]/46, XX [7]"	None	M2	4.4	511
+1410290	AML_079	55	Relapse	F	"46,XX"	None	M2	2.4	N/A
+1410291	AML_080	33	Diagnosis	M	"47, XY ,+11 [43]/46, XY [5]"	None	M5	71	852
+1410291	AML_080	35	Relapse	M	"46,XY[34]"	None	M5 	2	N/A
+1410292	AML_081	43	Diagnosis	M	"47, XY, +11 [14]/ 46, XY [13]"	None	M4	20	327
+1410292	AML_081	44	Relapse	M	"47,XY,+11 [25]"	FLT3-TKD	M4	12.2	N/A
+1410293	AML_082	37	Diagnosis	M	"46, XY, del (11) (q14 q25) [3]/46, XY [60]"	CEBPA biallelic mutated	M2	35	433
+1410293	AML_082	38	Relapse	M	"46,XY"	CEBPA biallelic mutated	M2	3	N/A
+1410294	AML_083	62	Diagnosis	M	"46, XY [68]"	None	M0	1.1	1277
+1410294	AML_083	65	Relapse	M	"46,XY"	None	M6	1.6	N/A
+1410295	AML_084	62	Diagnosis	M	"47,XY,+13[11]/46,XY[28]"	FLT3-ITD	M4	23	357
+1410295	AML_084	65	Relapse	M	"47,XY,+13"	FLT3-ITD	M4	38	N/A
+1410296	AML_085	32	Diagnosis	F	"46,XX,t(9;22)(q34;q11)[25]/46,XX[8]"	None	M1	15.7	957
+1410296	AML_085	34	Relapse	F	"46,XX"	None	unknown	1.9	N/A
+1410297	AML_086	30	Diagnosis	M	"46, XY [26]"	CEBPA biallelic mutated	RAEB-t	16.7	820
+1410297	AML_086	32	Relapse	M	"46,XY"	CEBPA biallelic mutated	M2	4.4	N/A
+1410298	AML_087	29	Diagnosis	M	"47,XY,del(5)(q2?1),add(15)(q2?5),+19 [14] /46,XY [11]"	unknown	M1	218	496
+1410298	AML_087	31	Relapse	M	"47,XY,del(5)(q2?1),add(15)(q2?5),+19"	unknown	unknown	10.6	N/A
+1410299	AML_088	30	Diagnosis	F	"46,XX[21]"	NPM1	M5b	174	280
+1410299	AML_088	31	Relapse	F	"46,XX"	NPM1	unknown	6.2	N/A
+1410300	AML_089	60	Diagnosis	F	"46, XX [24]"	None	RAEB-t	35	307
+1410300	AML_089	61	Relapse	F	"46,XX"	None	unknown	2.7	N/A
+1410301	AML_090	42	Diagnosis	M	"46,XY[20]"	FLT3-ITD	M4	138	195
+1410301	AML_090	42	Relapse	M	"46,XY"	FLT3-ITD	M4	3.1	N/A
+1410302	AML_091	45	Diagnosis	M	"46,XY,add(7)(q22)[4]/46,XY[21]"	INV(16)	M4eo	9.7	287
+1410302	AML_091	46	Relapse	M	"46,XY,add(7)(q22)"	INV(16)	M4eo	2.4	N/A
+1410303	AML_092	41	Diagnosis	M	"46,XY,inv(16)(p13q22)[21]"	None	M4eo	114	292
+1410303	AML_092	42	Relapse	M	"46,XY,inv(16)(p13q22)"	None	M4eo	5.7	N/A
+1410304	AML_093	53	Diagnosis	M	"46,XY[23]"	FLT3-ITD	M1	3.4	344
+1410304	AML_093	53	Relapse	M	Unknown	"FLT3-TKD,FLT3-ITD"	M1	147	N/A
+1410305	AML_094	50	Diagnosis	F	"46,XX[24]"	None	M2	0.8	871
+1410305	AML_094	53	Relapse	F	"43-45,XX,add(3)(q2?5),del(5)(q2?1q3?2),-7,-21[6], inc[cp8]"	None	M2	2	N/A
+1410306	AML_095	49	Diagnosis	F	"46,XX[20]"	FLT3-ITD	M5A	8.2	288
+1410306	AML_095	49	Relapse	F	"46,XX,t(3;14)(p1?2;q32)"	FLT3-ITD	M5A	2.1	N/A
+1410307	AML_096	43	Diagnosis	F	"46,XX,del(11)(q11q14),inv(16)(p13q22)[16]"	None	M2	20	1029
+1410307	AML_096	46	Relapse	F	"46,XX,del(11)(q11q14),inv(16)(p13q22)"	None	M2	1.5	N/A
+1410308	AML_097	72	Diagnosis	M	"46,XY,t(3;21)(q26;q22),del(12)(p12p13)[20]"	None	RAEB-t	54	161
+1410308	AML_097	72	Relapse	M	"46,XY,t(3;21)(q26q22),del(12)(p12p13)"	None	M0	3.1	N/A
+1410309	AML_098	67	Diagnosis	F	"46,XX[25]"	"NPM1"	M2	13.5	1042
+1410309	AML_098	70	Relapse	F	"46,XX,?ins(6;6)(q?22;q?22q24)"	NPM1	M2	3.7	N/A
+1410310	AML_099	61	Diagnosis	M	"mos47,XXY[27]/46,XY[4]"	FLT3-ITD	M4	510	1366
+1410310	AML_099	64	Relapse	M	"48,XXYc,+8"	FLT3-ITD	M4	85	N/A
+1410311	AML_100	65	Diagnosis	M	"56~58,XY,+X,der(5)del(5)(p1?2p1?4)del(5)(q1?3q15),+8,+10,+11,+11,+13,+19,+21,+22,+mar1,+mar2[8]/56~58,idem,add(2)(q3?6)[16]/46,XY[30]"	None	RAEB-t	2.4	266
+1410311	AML_100	66	Relapse	M	"53-58,XY,+X[5], +1[5], add(2)(q3?6)[6],der(5)del(5)(p1?2p1?4)del(5)(q1?3q15)[3],+8, +10[5],+11,+11[6],12?[4],+13-17[4],+19[5],+21[4],+22[6],1-6mar,inc[cp7]"	None	unknown	14.1	N/A
+1410312	AML_101	63	Diagnosis	M	"47,XY,+8[1]/46,XY[34]"	None	unknown	4.9	559
+1410312	AML_101	65	Relapse	M	"46,XY"	None	unknown	0.7	N/A
+1410313	AML_102	62	Diagnosis	M	"5~50,XY,+8,der(10)t(10;21)(p13;q21),t(11;22;11)(q23;q11.2;q13),-15,der(17)t(15;17)(q13.3;q25)del(17)(p11.2)ps,-21,+der(22)t(11;22;11),+mar1x2,+mar2.ish der(10)t(10;21)(AML1+,WCP21+), t(11;22;11)(MLL++,BCR-;MLL-,BCR-,WCP22+;MLL-,BCR+,WCP22+), der(17)(p53-)[cp16]/46,XY[4]"	None	M4	3.43	187
+1410313	AML_102	63	Relapse	M	"45~51,XY,+8,der(10)t(10;21)(p13;q21),t(11;22;11)(q23;q11.2;q13),-15,der(17)t(15;17)(q13.3;q25)del(17)(p11.2)ps,+4~10mar,inc[cp13]/46,XY[3]"	None	unknown	1.28	N/A
+1410314	AML_103	50	Diagnosis	F	"46, XX"	unknown	M2	10.1	637
+1410314	AML_103	52	Relapse	F	unknown	unknown	unknown	56	N/A
+1410315	AML_104	67	Diagnosis	F	"46,XX,t(2;11)(p25;q13),-9,del(9)(p13),add(13)(p11.2),-17,+mar1,+mar2[cp13]/46,XX[2] "	unknown	biphenotypic	39.3	516
+1410315	AML_104	69	Relapse	F	"46,XX,t(2;11)(p25;q13),del(9)(p13)[11]/46,XX[2] "	unknown	unknown	3.1	N/A
+1410316	AML_105	54	Diagnosis	M	"46, XY"	unknown	M2	1.14	939
+1410316	AML_105	57	Relapse	M	"46,XY,del(7)(q22q36)[3]/46,XY[31]"	unknown	unknown	1.12	N/A
+1410317	AML_106	61	Diagnosis	M	"46, XY"	unknown	M4	139	110
+1410317	AML_106	62	Relapse	M	"46, XY"	unknown	M4	45.9	N/A
+1410318	AML_107	63	Diagnosis	M	"46,X,-Y,+del(1)(p13)[15]/47,XY,+9[3]/46,XY[4] "	unknown	M2	13.3	104
+1410318	AML_107	63	Relapse	M	"46,X,-Y,+del(1)(p11)/46,XY+9/46,XY"	unknown	unknown	3.5	N/A
+1410319	AML_108	67	Diagnosis	M	"47,XY,+11"	unknown	M1	121	417
+1410319	AML_108	69	Relapse	M	"47,XY,+11"	unknown	unknown	2	N/A
+1410320	AML_109	18	Diagnosis	M	"46, XY"	NPM1	M2	47.5	607
+1410320	AML_109	20	Relapse	M	"46, XY"	unknown	unknown	1.63	N/A
+1410321	AML_110	49	Diagnosis	F	"46, XX"	CEBPA biallelic mutated	M2	7	246
+1410321	AML_110	50	Relapse	F	"46, XX"	unknown	unknown	3	N/A
+1410322	AML_111	28	Diagnosis	F	"46, XX"	unknown	M2	8.16	77
+1410322	AML_111	29	Relapse	F	"46, XX"	unknown	unknown	5.79	N/A
+1410323	AML_112	64	Diagnosis	M	"46, XY"	unknown	M4	41.8	41
+1410323	AML_112	65	Relapse	M	unknown	unknown	unknown	1.5	N/A
+1410324	AML_113	23	Diagnosis	F	"46, XX"	unknown	M1	14.5	187
+1410324	AML_113	23	Relapse	F	"49,XX,inv(1)(p13q42),inv(1)(p32q12),-4,der(5)t(4;5)(q25;q33),-6,+8,+del(9)(q13q21.2),-10,t(10;13)(p15;q12),der(12)t(10;12) (q11.2;p13),+13,+15,t(15;18)(q22;q21),+add(15)(q22),add(19)(q13.3),+mar[6]/49,XX,t(1;4)(q22;q31.3),+2,t(2;6)(q13;q13),t(3;17) (p24.2;q11.2),+8,+der(6)t(2;6),t(10;13)(p15;q12),+13,+16,add(18)(q23)[2]/46,XX[2] "	unknown	unknown	13.9	N/A
+1410325	AML_114	56	Diagnosis	M	"46, XY"	unknown	M2	17.9	866
+1410325	AML_114	58	Relapse	M	"46, XY"	unknown	M2	unknown	N/A
+1410326	AML_115	42	Diagnosis	F	"46,XX, t(5;8)(q31.3;q21)"	unknown	M2	2.32	199
+1410326	AML_115	43	Relapse	F	"47,XX, t(5;8)(q31.3;q21); trisomy 8"	unknown	unknown	2.38	N/A
+1410327	AML_116	64	Diagnosis	M	"47,XY,+4,del(4)(q12q31)[7]/46,XY[13]"	NPM1	M4	15.9	216
+1410327	AML_116	64	Relapse	M	"46, XY"	unknown	M4	54.9	N/A
+1410328	AML_117	41	Diagnosis	M	46XY	unknown	M4	56	638
+1410328	AML_117	42	Relapse	M	46XY	unknown	M2	55.1	N/A
+1410329	AML_118	25	Diagnosis	F	"46,XX[21]"	unknown	M4	239	256
+1410329	AML_118	26	Relapse	F	"46,XX[4]"	unknown	M5	27.8	N/A
+1410330	AML_119	64	Diagnosis	F	"46,XX[12]"	unknown	M1	13.8	410
+1410330	AML_119	65	Relapse	F	"46,XX[13]"	unknown	M1	1.6	N/A
+1410331	AML_120	67	Diagnosis	M	46XY	unknown	unknown	8	406
+1410331	AML_120	68	Relapse	M	Trisomy 8	unknown	M4	2.1	N/A
+1410332	AML_121	74	Diagnosis	M	"46,XY[25]"	unknown	M1	148.6	238
+1410332	AML_121	74	Relapse	M	"46,XY,t(2;5)(q21;q33)[3]/46,XY[29]"	unknown	M1	11.1	N/A
+1410333	AML_122	61	Diagnosis	M	"46,XY[20]"	unknown	unknown	1.5	759
+1410333	AML_122	63	Relapse	M	"46,XY, del(5)(q31q35),-7,+21[6]/44,XY,-15,-17[1]"	unknown	unknown	3.1	N/A
+1410334	AML_123	57	Diagnosis	M	"46,XY[18]"	unknown	MLD	40.4	309
+1410334	AML_123	58	Relapse	M	"46,XY[25]"	FLT3-ITD	unknown	58.8	N/A
+1410335	AML_124	65	Diagnosis	M	"47,XY,+21[8]/46,XY[16]"	FLT3-ITD	M2	32.9	665
+1410335	AML_124	67	Relapse	M	"46,XY[22]"	FLT3-ITD	unknown	10.6	N/A
+1410336	AML_125	31	Diagnosis	M	"46,XY,del(16)(q13q22),inv(16)(p13.3q22)[33]/46,XY[2]"	unknown	M2	6.8	507
+1410336	AML_125	32	Relapse	M	"46,XY,del(16)(q13q22),inv(16)(p13.3q22)[24]/46,XY[1]"	unknown	unknown	1.9	N/A
+1410337	AML_126	60	Diagnosis	M	"46,XY[2] POS FOR del 5q31 10 IN 200 CELLS / FISH FOR CEP 7/del 7q31 NEG IN 200 CELLS"	FLT3-ITD	M1	102	448
+1410337	AML_126	61	Relapse	M	"46,XY[25]"	unknown	unknown	57	N/A
+1410338	AML_127	66	Diagnosis	M	unknown	unknown	M4	138	456
+1410338	AML_127	66	Relapse	M	unknown	unknown	unknown	11.7	N/A
+1410339	AML_128	49	Diagnosis	M	"46,XY[1]"	unknown	M5	243	466
+1410339	AML_128	51	Relapse	M	unknown	unknown	M5	24	N/A
+1410340	AML_129	69	Diagnosis	M	"46,XY[1]"	unknown	unknown	24.8	84
+1410340	AML_129	69	Relapse	M	"46,XY[35]"	FLT3-ITD	MLD	8.7	N/A
+1410341	AML_130	57	Diagnosis	M	46 XY	FLT3-ITD	M4	136	77
+1410341	AML_130	57	Relapse	M	unknown	unknown	M4	71.3	N/A
+1410341	AML_130	57	Relapse 2	M	unknown	unknown	unknown	unknown	N/A
+1410341	AML_130	58	Relapse 3	M	unknown	unknown	unknown	unknown	N/A
+1410341	AML_130	58	Relapse 4	M	unknown	unknown	unknown	unknown	N/A
+1410342	AML_131	67	Diagnosis	F	"37-44, XX, t(1:4)(p32:p12), del(5)(?q13a33),del(20)(q11.2)[cp4]/46,XX[6]"	unknown	M2	2.3	283
+1410342	AML_131	68	Relapse	F	"43-44,XX,t(1;4)(p32;p12),del(5)(q13q33),del(7)(q11.2q32),-8,del(12)(p11.2),+del(12)(q15q24.1),add(13)(p11.2),-15,-17,del(20)(q11.2),+mar[cp14]/46,XX[6]"	unknown	unknown	5.4	N/A
+1410343	AML_132	71	Diagnosis	M	46 XY[20]	FLT3-ITD	M4	17.1	176
+1410343	AML_132	72	Relapse	M	46 XY[20]	unknown	unknown	15.8	N/A
+1410344	AML_133	57	Diagnosis	F	"46,XX[27]"	unknown	unknown	1.6	636
+1410344	AML_133	58	Relapse	F	46 XX[20]	unknown	M1	92.6	N/A
+1410345	AML_134	55	Diagnosis	M	"46,XY,t(8;21)(q22;q22)[22]/46,XY[3]"	unknown	M2/M4	3.7	328
+1410345	AML_134	56	Relapse	M	"46 XY, t(8;21)(q22;q22)[5]/46XY,idem,t(1;6)(p35p24),t(9;11)(q34;q13),del(11)9q21)[19]"	unknown	MLD	4.9	N/A
+1410346	AML_135	74	Diagnosis	M	monosomy 7 [7/17]	FLT3-ITD	unknown	121.9	171
+1410346	AML_135	74	Relapse	M	"45,XY,-7,add(20)(p13)_cp18"	FLT3-ITD	unknown	6.2	N/A
+1410347	AML_136	53	Diagnosis	M	46 XY	None	unknown	4.1	unknown
+1410347	AML_136	54	Relapse	M	unknown	unknown	unknown	15.7	N/A
+1410348	AML_137	50	Diagnosis	F	"46,XX"	FLT3-ITD+NPM1	unknown	21.9	292
+1410348	AML_137	50	Relapse	F	"51,XX,+4,+5,+8,+13,+20 [13/20]/46, XX [7/20]"	"FLT3-ITD, NPM1"	unknown	4.5	N/A
+1410349	AML_138	19	Diagnosis	F	t(11;19)(q23;p13.1)	None	unknown	40.2	407
+1410349	AML_138	20	Relapse	F	"46,XX,t(11;19)(q23;p13.1)[14]/46,XX,inv(1)(p13q32),t(2;8)(p12 ;q24),t(11;19)(q23;p13.1)[3]/46,XY[3]   "	None	unknown	12.9	N/A
+1410350	AML_139	55	Diagnosis	F	"46, XX"	NPM1	unknown	18.4	158
+1410350	AML_139	56	Relapse	F	unknown	NPM1	unknown	20.4	N/A
+1410351	AML_140	58	Diagnosis	M	"46, XY"	FLT3-ITD	M4	115	162
+1410351	AML_140	59	Relapse	M	"46, XY"	FLT3-ITD	unknown	44.4	N/A
+1410352	NBM_01	31	N/A	F	N/A	N/A	N/A		N/A
+1410353	NBM_02	25	N/A	M	N/A	N/A	N/A		N/A
+1410354	NBM_03	48	N/A	M	N/A	N/A	N/A		N/A
+1410355	NBM_04	35	N/A	M	N/A	N/A	N/A		N/A
+1410356	NBM_05	44	N/A	M	N/A	N/A	N/A		N/A
+1410357	NBM_06	84	N/A	F	N/A	N/A	N/A		N/A
+1410358	NBM_07	66	N/A	F	N/A	N/A	N/A		N/A
+1410359	NBM_08	65	N/A	M	N/A	N/A	N/A		N/A
+1410360	NBM_09	77	N/A	F	N/A	N/A	N/A		N/A
+1410361	NBM_10	67	N/A	M	N/A	N/A	N/A		N/A
+1410362	NBM_11	73	N/A	M	N/A	N/A	N/A		N/A
+1410363	NBM_12	76	N/A	F	N/A	N/A	N/A		N/A
+1410364	NBM_13	72	N/A	F	N/A	N/A	N/A		N/A
+1410365	NBM_14	73	N/A	F	N/A	N/A	N/A		N/A
