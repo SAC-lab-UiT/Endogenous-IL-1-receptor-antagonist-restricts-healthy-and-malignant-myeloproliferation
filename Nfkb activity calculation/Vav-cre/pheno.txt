@@ -1,7 +1,0 @@
-"name"	"Cond"
-"1"	"D1922_N.sorted.bam"	"Nras"
-"2"	"T833_Nras.sortedA.bam"	"Nras"
-"3"	"T883_Nras.sorted.bam"	"Nras"
-"4"	"T798_WT.sorted.bam"	"WT"
-"5"	"Vav.sorted.bam"	"WT"
-"6"	"WT.sorted.bam"	"WT"
