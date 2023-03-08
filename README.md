@@ -6,6 +6,6 @@ Support files are included in the corresponding folders.
 
 scRNA-seq data and analysis of Myeloid, LSK and Stromal cells are provided in their corresponding folders.
 
-Contributors: Vincent Cuminetti, Carlos Torroja, Itziar Cossío, Andrea Rubio, Peter Utnes, Christopher G. Fenton, Fátima Sánchez-Cabo, Endre Anderssen, Andrés Hidalgo & Lorena Arranz 
+Contributors: Vincent Cuminetti, Carlos Torroja, Itziar Cossío, Andrea Rubio, Peter Utnes, Christopher G. Fenton, Fátima Sánchez-Cabo, Endre Anderssen, Andrés Hidalgo & Lorena Arranz. 
 
-Requests for support in using this code should be adressed to lorena.arranz@uit.no
+Requests for support in using this code should be adressed to lorena.arranz@uit.no.
